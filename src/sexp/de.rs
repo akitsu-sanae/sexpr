@@ -98,7 +98,7 @@ impl<'de> Deserialize<'de> for Sexp {
                 where
                 D: serde::Deserializer<'de>,
             {
-                /// XXX something about this feels wrong
+                // XXX something about this feels wrong
                 let result: String = try!(Deserialize::deserialize(deserializer));
                 Ok(Sexp::Atom(Atom::into_symbol(String::from(result))))
             }
@@ -438,4 +438,3 @@ impl<'de> SeqAccess<'de> for SeqRefDeserializer<'de> {
         }
     }
 }
-

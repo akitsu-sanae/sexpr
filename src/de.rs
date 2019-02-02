@@ -20,7 +20,6 @@ use read::{self, Reference};
 
 pub use read::{Read, IoRead, SliceRead, StrRead};
 use atom::Atom;
-use sexp::Sexp;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -735,24 +734,6 @@ impl<'de, 'a, R: Read<'de> + 'a> de::VariantAccess<'de> for UnitVariantAccess<'a
         V: de::Visitor<'de>,
     {
         Err(de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"),)
-    }
-}
-
-macro_rules! deserialize_integer_key {
-    ($deserialize:ident => $visit:ident) => {
-        fn $deserialize<V>(self, visitor: V) -> Result<V::Value>
-            where
-            V: de::Visitor<'de>,
-        {
-            self.de.eat_char();
-            self.de.str_buf.clear();
-            let string = try!(self.de.read.parse_str(&mut self.de.str_buf));
-            match (string.parse(), string) {
-                (Ok(integer), _) => visitor.$visit(integer),
-                (Err(_), Reference::Borrowed(s)) => visitor.visit_borrowed_str(s),
-                (Err(_), Reference::Copied(s)) => visitor.visit_str(s),
-            }
-        }
     }
 }
 

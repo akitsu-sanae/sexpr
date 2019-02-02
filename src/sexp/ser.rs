@@ -9,7 +9,6 @@
 use serde::{self, Serialize};
 use error::{Error, ErrorCode};
 use number::Number;
-use atom::{Atom};
 use sexp::{Sexp, to_value};
 
 

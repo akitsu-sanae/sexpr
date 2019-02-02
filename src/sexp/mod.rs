@@ -72,7 +72,6 @@
 //! # }
 //! ```
 //!
-use std::str;
 use std::string::String;
 
 use serde::ser::Serialize;
