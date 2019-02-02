@@ -13,16 +13,15 @@ extern crate serde;
 extern crate serde_bytes;
 extern crate sexpr;
 
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::{f32, f64};
+use std::{i16, i32, i64, i8};
 use std::{u32, u64};
-use std::{i8, i16, i32, i64};
 
 //use serde::de::{self, Deserialize};
-use serde::ser::{self};
+use serde::ser;
 
 use sexpr::{to_string, to_value};
-
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -46,7 +45,7 @@ struct Outer {
 }
 
 fn test_encode_ok<T>(errors: &[(T, &str)])
-    where
+where
     T: PartialEq + Debug + ser::Serialize,
 {
     for &(ref value, out) in errors {
@@ -82,15 +81,9 @@ fn test_write_i64() {
 
 #[test]
 fn test_write_f64() {
-    let tests = &[
-        (3.0, "3.0"),
-        (3.1, "3.1"),
-        (-1.5, "-1.5"),
-        (0.5, "0.5"),
-    ];
+    let tests = &[(3.0, "3.0"), (3.1, "3.1"), (-1.5, "-1.5"), (0.5, "0.5")];
     test_encode_ok(tests);
 }
-
 
 #[test]
 fn test_write_str() {
@@ -109,7 +102,6 @@ fn test_write_sym() {
     let tests = &[("a", "\"a\"")];
     test_encode_ok(tests);
 }
-
 
 // ///
 // /// ```rust

@@ -1,8 +1,8 @@
 // Copyright 2017 Zephyr Pellerin
 use error::Error;
 use num_traits::NumCast;
-use serde::de::{self, Visitor, Unexpected};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::de::{self, Unexpected, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 use std::i64;
 

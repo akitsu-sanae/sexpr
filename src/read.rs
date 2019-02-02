@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{char, cmp, io, str};
 use std::ops::Deref;
+use std::{char, cmp, io, str};
 
 use iter::LineColIterator;
 
@@ -99,7 +99,7 @@ impl<'b, 'c, T: ?Sized + 'static> Deref for Reference<'b, 'c, T> {
 
 /// JSON input source that reads from a std::io input stream.
 pub struct IoRead<R>
-    where
+where
     R: io::Read,
 {
     iter: LineColIterator<io::Bytes<R>>,
@@ -132,7 +132,7 @@ mod private {
 //////////////////////////////////////////////////////////////////////////////
 
 impl<R> IoRead<R>
-    where
+where
     R: io::Read,
 {
     /// Create a JSON input source to read from a std::io input stream.
@@ -144,10 +144,10 @@ impl<R> IoRead<R>
     }
 }
 
-impl<R> private::Sealed for IoRead<R> where R: io::Read { }
+impl<R> private::Sealed for IoRead<R> where R: io::Read {}
 
 impl<R> IoRead<R>
-    where
+where
     R: io::Read,
 {
     fn parse_str_bytes<'s, T, F>(
@@ -156,7 +156,7 @@ impl<R> IoRead<R>
         validate: bool,
         result: F,
     ) -> Result<T>
-        where
+    where
         T: 's,
         F: FnOnce(&'s Self, &'s [u8]) -> Result<T>,
     {
@@ -183,41 +183,35 @@ impl<R> IoRead<R>
         }
     }
 
-    fn parse_symbol_bytes<'s, T, F>(
-        &'s mut self,
-        scratch: &'s mut Vec<u8>,
-        result: F,
-    ) -> Result<T>
-        where
+    fn parse_symbol_bytes<'s, T, F>(&'s mut self, scratch: &'s mut Vec<u8>, result: F) -> Result<T>
+    where
         T: 's,
         F: FnOnce(&'s Self, &'s [u8]) -> Result<T>,
     {
         loop {
             match try!(self.next().map_err(Error::io)) {
-                Some(b' ') | Some(b'\n') | Some(b'\t') | Some(b'\r') | Some(b')') | None => return result(self, scratch),
+                Some(b' ') | Some(b'\n') | Some(b'\t') | Some(b'\r') | Some(b')') | None => {
+                    return result(self, scratch);
+                }
                 Some(ch) => scratch.push(ch),
             }
         }
     }
 }
 
-
-
 impl<'de, R> Read<'de> for IoRead<R>
-    where
+where
     R: io::Read,
 {
     #[inline]
     fn next(&mut self) -> io::Result<Option<u8>> {
         match self.ch.take() {
             Some(ch) => Ok(Some(ch)),
-            None => {
-                match self.iter.next() {
-                    Some(Err(err)) => Err(err),
-                    Some(Ok(ch)) => Ok(Some(ch)),
-                    None => Ok(None),
-                }
-            }
+            None => match self.iter.next() {
+                Some(Err(err)) => Err(err),
+                Some(Ok(ch)) => Ok(Some(ch)),
+                None => Ok(None),
+            },
         }
     }
 
@@ -225,16 +219,14 @@ impl<'de, R> Read<'de> for IoRead<R>
     fn peek(&mut self) -> io::Result<Option<u8>> {
         match self.ch {
             Some(ch) => Ok(Some(ch)),
-            None => {
-                match self.iter.next() {
-                    Some(Err(err)) => Err(err),
-                    Some(Ok(ch)) => {
-                        self.ch = Some(ch);
-                        Ok(self.ch)
-                    }
-                    None => Ok(None),
+            None => match self.iter.next() {
+                Some(Err(err)) => Err(err),
+                Some(Ok(ch)) => {
+                    self.ch = Some(ch);
+                    Ok(self.ch)
                 }
-            }
+                None => Ok(None),
+            },
         }
     }
 
@@ -314,7 +306,7 @@ impl<'a> SliceRead<'a> {
         scratch: &'s mut Vec<u8>,
         result: F,
     ) -> Result<Reference<'a, 's, T>>
-        where
+    where
         T: 's,
         F: for<'f> FnOnce(&'s Self, &'f [u8]) -> Result<&'f T>,
     {
@@ -323,7 +315,7 @@ impl<'a> SliceRead<'a> {
 
         loop {
             match self.slice[self.index] {
-                b' ' | b'\n' | b'\t' | b'\r' | b')' =>   {
+                b' ' | b'\n' | b'\t' | b'\r' | b')' => {
                     if scratch.is_empty() {
                         // Fast path: return a slice of the raw JSON without any
                         // copying.
@@ -336,7 +328,7 @@ impl<'a> SliceRead<'a> {
                         return result(self, copied).map(Reference::Copied);
                     }
                 }
-                _ => self.index += 1
+                _ => self.index += 1,
             }
         }
     }
@@ -350,7 +342,7 @@ impl<'a> SliceRead<'a> {
         validate: bool,
         result: F,
     ) -> Result<Reference<'a, 's, T>>
-        where
+    where
         T: 's,
         F: for<'f> FnOnce(&'s Self, &'f [u8]) -> Result<&'f T>,
     {
@@ -404,28 +396,24 @@ impl<'a> Read<'a> for SliceRead<'a> {
     fn next(&mut self) -> io::Result<Option<u8>> {
         // `Ok(self.slice.get(self.index).map(|ch| { self.index += 1; *ch }))`
         // is about 10% slower.
-        Ok(
-            if self.index < self.slice.len() {
-                let ch = self.slice[self.index];
-                self.index += 1;
-                Some(ch)
-            } else {
-                None
-            },
-        )
+        Ok(if self.index < self.slice.len() {
+            let ch = self.slice[self.index];
+            self.index += 1;
+            Some(ch)
+        } else {
+            None
+        })
     }
 
     #[inline]
     fn peek(&mut self) -> io::Result<Option<u8>> {
         // `Ok(self.slice.get(self.index).map(|ch| *ch))` is about 10% slower
         // for some reason.
-        Ok(
-            if self.index < self.slice.len() {
-                Some(self.slice[self.index])
-            } else {
-                None
-            },
-        )
+        Ok(if self.index < self.slice.len() {
+            Some(self.slice[self.index])
+        } else {
+            None
+        })
     }
 
     #[inline]
@@ -468,7 +456,9 @@ impl<'a> Read<'a> for SliceRead<'a> {
 impl<'a> StrRead<'a> {
     /// Create a JSON input source to read from a UTF-8 string.
     pub fn new(s: &'a str) -> Self {
-        StrRead { delegate: SliceRead::new(s.as_bytes()) }
+        StrRead {
+            delegate: SliceRead::new(s.as_bytes()),
+        }
     }
 }
 
@@ -503,25 +493,19 @@ impl<'a> Read<'a> for StrRead<'a> {
     }
 
     fn parse_str<'s>(&'s mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'a, 's, str>> {
-        self.delegate
-            .parse_str_bytes(
-                scratch, true, |_, bytes| {
-                    // The input is assumed to be valid UTF-8 and the \u-escapes are
-                    // checked along the way, so don't need to check here.
-                    Ok(unsafe { str::from_utf8_unchecked(bytes) })
-                }
-            )
+        self.delegate.parse_str_bytes(scratch, true, |_, bytes| {
+            // The input is assumed to be valid UTF-8 and the \u-escapes are
+            // checked along the way, so don't need to check here.
+            Ok(unsafe { str::from_utf8_unchecked(bytes) })
+        })
     }
 
     fn parse_symbol<'s>(&'s mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'a, 's, str>> {
-        self.delegate
-            .parse_symbol_bytes(
-                scratch, |_, bytes| {
-                    // The input is assumed to be valid UTF-8 and the \u-escapes are
-                    // checked along the way, so don't need to check here.
-                    Ok(unsafe { str::from_utf8_unchecked(bytes) })
-                }
-            )
+        self.delegate.parse_symbol_bytes(scratch, |_, bytes| {
+            // The input is assumed to be valid UTF-8 and the \u-escapes are
+            // checked along the way, so don't need to check here.
+            Ok(unsafe { str::from_utf8_unchecked(bytes) })
+        })
     }
 
     fn parse_str_raw<'s>(
@@ -624,14 +608,12 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
                     }
                 }
 
-                n => {
-                    match char::from_u32(n as u32) {
-                        Some(c) => c,
-                        None => {
-                            return error(read, ErrorCode::InvalidUnicodeCodePoint);
-                        }
+                n => match char::from_u32(n as u32) {
+                    Some(c) => c,
+                    None => {
+                        return error(read, ErrorCode::InvalidUnicodeCodePoint);
                     }
-                }
+                },
             };
 
             // FIXME: this allocation is required in order to be compatible with stable

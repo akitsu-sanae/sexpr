@@ -226,17 +226,17 @@ extern crate num_traits;
 // extern crate core;
 #[macro_use]
 extern crate serde;
-extern crate itoa;
 extern crate dtoa;
+extern crate itoa;
 
 #[doc(inline)]
-pub use self::de::{Deserializer, StreamDeserializer, from_reader, from_slice, from_str};
+pub use self::de::{from_reader, from_slice, from_str, Deserializer, StreamDeserializer};
 #[doc(inline)]
 pub use self::error::{Error, Result};
 #[doc(inline)]
-pub use ser::{to_string, Serializer};
+pub use self::sexp::{from_value, to_value, Number, Sexp};
 #[doc(inline)]
-pub use self::sexp::{Sexp, Number, from_value, to_value};
+pub use ser::{to_string, Serializer};
 
 #[macro_use]
 mod macros;
@@ -246,7 +246,7 @@ pub mod error;
 pub mod ser;
 pub mod sexp;
 
+mod atom;
 mod iter;
 mod number;
-mod atom;
 mod read;

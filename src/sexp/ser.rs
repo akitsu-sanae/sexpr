@@ -6,16 +6,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use serde::{self, Serialize};
 use error::{Error, ErrorCode};
 use number::Number;
-use sexp::{Sexp, to_value};
-
+use serde::{self, Serialize};
+use sexp::{to_value, Sexp};
 
 impl Serialize for Sexp {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: ::serde::Serializer,
+    where
+        S: ::serde::Serializer,
     {
         match *self {
             Sexp::Nil => serializer.serialize_unit(),
@@ -23,9 +23,7 @@ impl Serialize for Sexp {
             Sexp::Number(ref n) => n.serialize(serializer),
             Sexp::Atom(ref atom) => atom.serialize(serializer),
             Sexp::List(ref v) => v.serialize(serializer),
-            Sexp::Pair(_, _) => {
-                unimplemented!()
-            },
+            Sexp::Pair(_, _) => unimplemented!(),
             // Sexp::Pair(Some(_), None) => unimplemented!(),
             // Sexp::Pair(None, Some(_)) => unimplemented!(),
             // Sexp::Pair(None, None)  => unimplemented!(),
@@ -145,7 +143,7 @@ impl serde::Serializer for Serializer {
         _name: &'static str,
         value: &T,
     ) -> Result<Sexp, Error>
-        where
+    where
         T: Serialize,
     {
         value.serialize(self)
@@ -158,27 +156,29 @@ impl serde::Serializer for Serializer {
         _variant: &'static str,
         _value: &T,
     ) -> Result<Sexp, Error>
-        where
+    where
         T: Serialize,
     {
         unimplemented!()
     }
 
     #[inline]
-        fn serialize_none(self) -> Result<Sexp, Error> {
+    fn serialize_none(self) -> Result<Sexp, Error> {
         self.serialize_unit()
     }
 
     #[inline]
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Sexp, Error>
-        where
+    where
         T: Serialize,
     {
         value.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Error> {
-        Ok(SerializeVec { vec: Vec::with_capacity(len.unwrap_or(0)) })
+        Ok(SerializeVec {
+            vec: Vec::with_capacity(len.unwrap_or(0)),
+        })
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Error> {
@@ -200,12 +200,10 @@ impl serde::Serializer for Serializer {
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Error> {
-        Ok(
-            SerializeTupleVariant {
-                name: String::from(variant),
-                vec: Vec::with_capacity(len),
-            },
-        )
+        Ok(SerializeTupleVariant {
+            name: String::from(variant),
+            vec: Vec::with_capacity(len),
+        })
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Error> {
@@ -236,7 +234,8 @@ pub struct SerializeVec {
     vec: Vec<Sexp>,
 }
 
-#[doc(hidden)]#[allow(dead_code)]
+#[doc(hidden)]
+#[allow(dead_code)]
 pub struct SerializeTupleVariant {
     name: String,
     vec: Vec<Sexp>,
@@ -247,7 +246,7 @@ impl serde::ser::SerializeSeq for SerializeVec {
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
         self.vec.push(try!(to_value(&value)));
@@ -264,7 +263,7 @@ impl serde::ser::SerializeTuple for SerializeVec {
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
         serde::ser::SerializeSeq::serialize_element(self, value)
@@ -280,7 +279,7 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
         serde::ser::SerializeSeq::serialize_element(self, value)
@@ -296,7 +295,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
         self.vec.push(try!(to_value(&value)));
@@ -352,7 +351,7 @@ impl serde::ser::SerializeStruct for SerializeMap {
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
         try!(serde::ser::SerializeMap::serialize_key(self, key));
@@ -375,12 +374,13 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Error>
-        where
+    where
         T: Serialize,
     {
-        self.values.push(
-            Sexp::new_entry(key, to_value(&value).ok().unwrap_or(Sexp::Nil))
-        );
+        self.values.push(Sexp::new_entry(
+            key,
+            to_value(&value).ok().unwrap_or(Sexp::Nil),
+        ));
         Ok(())
     }
 

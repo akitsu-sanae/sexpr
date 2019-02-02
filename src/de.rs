@@ -8,9 +8,9 @@
 
 //! Deserialize S-expression data to a Rust data structure.
 
-use std::{i32, u64};
 use std::io;
 use std::marker::PhantomData;
+use std::{i32, u64};
 
 use serde::de::{self, Unexpected};
 
@@ -18,9 +18,8 @@ use super::error::{Error, ErrorCode, Result};
 
 use read::{self, Reference};
 
-pub use read::{Read, IoRead, SliceRead, StrRead};
 use atom::Atom;
-
+pub use read::{IoRead, Read, SliceRead, StrRead};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +31,7 @@ pub struct Deserializer<R> {
 }
 
 impl<'de, R> Deserializer<R>
-    where
+where
     R: read::Read<'de>,
 {
     /// Create a S-expression deserializer from one of the possible sexpr input
@@ -53,7 +52,7 @@ impl<'de, R> Deserializer<R>
 }
 
 impl<R> Deserializer<read::IoRead<R>>
-    where
+where
     R: io::Read,
 {
     /// Creates a S-expression deserializer from an `io::Read`.
@@ -79,7 +78,7 @@ impl<'a> Deserializer<read::StrRead<'a>> {
 macro_rules! overflow {
     ($a:ident * 10 + $b:ident, $c:expr) => {
         $a >= $c / 10 && ($a > $c / 10 || $b > $c % 10)
-    }
+    };
 }
 
 enum Number {
@@ -90,7 +89,7 @@ enum Number {
 
 impl Number {
     fn visit<'de, V>(self, visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         match self {
@@ -114,7 +113,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
 
     /// Turn a Sexp deserializer into an iterator over values of type T.
     pub fn into_iter<T>(self) -> StreamDeserializer<'de, R, T>
-        where
+    where
         T: de::Deserialize<'de>,
     {
         // This cannot be an implementation of std::iter::IntoIterator because
@@ -176,7 +175,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn parse_value<V>(&mut self, visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         let peek = match try!(self.parse_whitespace()) {
@@ -195,9 +194,9 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                     Some(b'n') => {
                         try!(self.parse_ident(b"il"));
                         visitor.visit_bool(true)
-                    },
+                    }
                     Some(_) => Err(self.peek_error(ErrorCode::ExpectedSomeIdent)),
-                    None => Err(self.peek_error(ErrorCode::EofWhileParsingValue))
+                    None => Err(self.peek_error(ErrorCode::EofWhileParsingValue)),
                 }
             }
             b'-' => {
@@ -231,7 +230,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                     (Err(err), _) | (_, Err(err)) => Err(err),
                 }
             }
-            b'a' ... b'z' | b'A' ... b'Z' => {
+            b'a'...b'z' | b'A'...b'Z' => {
                 self.str_buf.clear();
                 match try!(self.read.parse_symbol(&mut self.str_buf)) {
                     Reference::Borrowed(s) => visitor.visit_newtype_struct(Atom::from_str(s)),
@@ -352,13 +351,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         })
     }
 
-
-    fn parse_decimal(
-        &mut self,
-        pos: bool,
-        mut significand: u64,
-        mut exponent: i32,
-    ) -> Result<f64> {
+    fn parse_decimal(&mut self, pos: bool, mut significand: u64, mut exponent: i32) -> Result<f64> {
         self.eat_char();
 
         let mut at_least_one_digit = false;
@@ -390,12 +383,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         }
     }
 
-    fn f64_from_parts(
-        &mut self,
-        pos: bool,
-        significand: u64,
-        mut exponent: i32,
-    ) -> Result<f64> {
+    fn f64_from_parts(&mut self, pos: bool, significand: u64, mut exponent: i32) -> Result<f64> {
         let mut f = significand as f64;
         loop {
             match POW10.get(exponent.abs() as usize) {
@@ -471,13 +459,12 @@ static POW10: [f64; 309] =
      1e290, 1e291, 1e292, 1e293, 1e294, 1e295, 1e296, 1e297, 1e298, 1e299,
      1e300, 1e301, 1e302, 1e303, 1e304, 1e305, 1e306, 1e307, 1e308];
 
-
 impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
     type Error = Error;
 
     #[inline]
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         self.parse_value(visitor)
@@ -485,72 +472,71 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
 
     /// Parses a `nil` as a None, and any other values as a `Some(...)`.
     #[inline]
-        fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
-        where
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    where
         V: de::Visitor<'de>,
     {
-            match try!(self.parse_whitespace()) {
-                Some(b'n') => {
-                    self.eat_char();
-                    try!(self.parse_ident(b"il"));
-                    visitor.visit_none()
-                }
-                _ => visitor.visit_some(self),
+        match try!(self.parse_whitespace()) {
+            Some(b'n') => {
+                self.eat_char();
+                try!(self.parse_ident(b"il"));
+                visitor.visit_none()
             }
+            _ => visitor.visit_some(self),
         }
+    }
 
     /// Parses a newtype struct as the underlying value.
     #[inline]
-        fn deserialize_newtype_struct<V>(self, _name: &str, visitor: V) -> Result<V::Value>
-        where
+    fn deserialize_newtype_struct<V>(self, _name: &str, visitor: V) -> Result<V::Value>
+    where
         V: de::Visitor<'de>,
     {
-            visitor.visit_newtype_struct(self)
-        }
+        visitor.visit_newtype_struct(self)
+    }
 
     /// Parses an enum as an s-expression like `(($KEY1 $VALUE1) ($KEY2 $VALUE2))` where $VALUE
     /// is either a direct Sexp or a sequence.
     #[inline]
-        fn deserialize_enum<V>(
-            self,
-            _name: &str,
-            _variants: &'static [&'static str],
-            visitor: V,
-        ) -> Result<V::Value>
-        where
+    fn deserialize_enum<V>(
+        self,
+        _name: &str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
         V: de::Visitor<'de>,
     {
-            match try!(self.parse_whitespace()) {
-                Some(b'(') => {
-                    self.remaining_depth -= 1;
-                    if self.remaining_depth == 0 {
-                        return Err(self.peek_error(ErrorCode::RecursionLimitExceeded));
-                    }
-
-                    self.eat_char();
-                    let value = try!(visitor.visit_enum(VariantAccess::new(self)));
-
-                    self.remaining_depth += 1;
-
-                    match try!(self.parse_whitespace()) {
-                        Some(b')') => {
-                            self.eat_char();
-                            Ok(value)
-                        }
-                        Some(_) => Err(self.error(ErrorCode::ExpectedSomeValue)),
-                        None => Err(self.error(ErrorCode::EofWhileParsingAlist)),
-                    }
+        match try!(self.parse_whitespace()) {
+            Some(b'(') => {
+                self.remaining_depth -= 1;
+                if self.remaining_depth == 0 {
+                    return Err(self.peek_error(ErrorCode::RecursionLimitExceeded));
                 }
-                Some(b'"') => visitor.visit_enum(UnitVariantAccess::new(self)),
-                // TODO: ATOMS BROKEN
-                Some(_) => Err(self.peek_error(ErrorCode::ExpectedSomeValue)),
-                None => Err(self.peek_error(ErrorCode::EofWhileParsingValue)),
-            }
-        }
 
+                self.eat_char();
+                let value = try!(visitor.visit_enum(VariantAccess::new(self)));
+
+                self.remaining_depth += 1;
+
+                match try!(self.parse_whitespace()) {
+                    Some(b')') => {
+                        self.eat_char();
+                        Ok(value)
+                    }
+                    Some(_) => Err(self.error(ErrorCode::ExpectedSomeValue)),
+                    None => Err(self.error(ErrorCode::EofWhileParsingAlist)),
+                }
+            }
+            Some(b'"') => visitor.visit_enum(UnitVariantAccess::new(self)),
+            // TODO: ATOMS BROKEN
+            Some(_) => Err(self.peek_error(ErrorCode::ExpectedSomeValue)),
+            None => Err(self.peek_error(ErrorCode::EofWhileParsingValue)),
+        }
+    }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         match try!(self.parse_whitespace()) {
@@ -564,22 +550,20 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
             }
             _ => self.deserialize_any(visitor),
         }
-
     }
 
     #[inline]
-        fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
-        where
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
+    where
         V: de::Visitor<'de>,
     {
-            self.deserialize_bytes(visitor)
-        }
+        self.deserialize_bytes(visitor)
+    }
 
     forward_to_deserialize_any! {
-            bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string unit
-                unit_struct seq tuple tuple_struct map struct identifier ignored_any
-        }
-
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string unit
+            unit_struct seq tuple tuple_struct map struct identifier ignored_any
+    }
 }
 
 // POSSIBLY BROKEN --------------------------------------------------------
@@ -601,13 +585,13 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
     type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
-        where
+    where
         T: de::DeserializeSeed<'de>,
     {
         match try!(self.de.peek()) {
             Some(b')') => {
                 return Ok(None);
-            },
+            }
             Some(b' ') => {
                 self.de.eat_char();
             }
@@ -618,7 +602,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
                 } else {
                     return Err(self.de.peek_error(ErrorCode::ExpectedListEltOrEnd));
                 }
-            },
+            }
             None => {
                 return Err(self.de.peek_error(ErrorCode::EofWhileParsingList));
             }
@@ -649,7 +633,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::EnumAccess<'de> for VariantAccess<'a, R> {
     type Variant = Self;
 
     fn variant_seed<V>(self, _seed: V) -> Result<(V::Value, Self)>
-        where
+    where
         V: de::DeserializeSeed<'de>,
     {
         unimplemented!()
@@ -664,21 +648,21 @@ impl<'de, 'a, R: Read<'de> + 'a> de::VariantAccess<'de> for VariantAccess<'a, R>
     }
 
     fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
-        where
+    where
         T: de::DeserializeSeed<'de>,
     {
         seed.deserialize(self.de)
     }
 
     fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         de::Deserializer::deserialize_any(self.de, visitor)
     }
 
     fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
         de::Deserializer::deserialize_any(self.de, visitor)
@@ -700,7 +684,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::EnumAccess<'de> for UnitVariantAccess<'a, R
     type Variant = Self;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self)>
-        where
+    where
         V: de::DeserializeSeed<'de>,
     {
         let variant = try!(seed.deserialize(&mut *self.de));
@@ -716,24 +700,33 @@ impl<'de, 'a, R: Read<'de> + 'a> de::VariantAccess<'de> for UnitVariantAccess<'a
     }
 
     fn newtype_variant_seed<T>(self, _seed: T) -> Result<T::Value>
-        where
+    where
         T: de::DeserializeSeed<'de>,
     {
-        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant"),)
+        Err(de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"newtype variant",
+        ))
     }
 
     fn tuple_variant<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
-        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant"),)
+        Err(de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"tuple variant",
+        ))
     }
 
     fn struct_variant<V>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value>
-        where
+    where
         V: de::Visitor<'de>,
     {
-        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"),)
+        Err(de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"struct variant",
+        ))
     }
 }
 
@@ -771,7 +764,7 @@ pub struct StreamDeserializer<'de, R, T> {
 }
 
 impl<'de, R, T> StreamDeserializer<'de, R, T>
-    where
+where
     R: read::Read<'de>,
     T: de::Deserialize<'de>,
 {
@@ -802,9 +795,8 @@ impl<'de, R, T> StreamDeserializer<'de, R, T>
     }
 }
 
-
 impl<'de, R, T> Iterator for StreamDeserializer<'de, R, T>
-    where
+where
     R: Read<'de>,
     T: de::Deserialize<'de>,
 {
@@ -836,7 +828,7 @@ impl<'de, R, T> Iterator for StreamDeserializer<'de, R, T>
 //////////////////////////////////////////////////////////////////////////////
 
 fn from_trait<'de, R, T>(read: R) -> Result<T>
-    where
+where
     R: Read<'de>,
     T: de::Deserialize<'de>,
 {
@@ -896,7 +888,7 @@ fn from_trait<'de, R, T>(read: R) -> Result<T>
 /// }
 /// ```
 pub fn from_reader<R, T>(rdr: R) -> Result<T>
-    where
+where
     R: io::Read,
     T: de::DeserializeOwned,
 {
@@ -940,7 +932,7 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
 /// }
 /// ```
 pub fn from_slice<'a, T>(v: &'a [u8]) -> Result<T>
-    where
+where
     T: de::Deserialize<'a>,
 {
     from_trait(read::SliceRead::new(v))
@@ -983,7 +975,7 @@ pub fn from_slice<'a, T>(v: &'a [u8]) -> Result<T>
 /// }
 /// ```
 pub fn from_str<'a, T>(s: &'a str) -> Result<T>
-    where
+where
     T: de::Deserialize<'a>,
 {
     from_trait(read::StrRead::new(s))

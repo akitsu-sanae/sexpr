@@ -7,7 +7,7 @@
 // except according to those terms.
 use error::Error;
 use serde::de::{self, Visitor};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 
 use std::borrow::Cow;
@@ -15,7 +15,7 @@ use std::borrow::Cow;
 /// Represents a Sexp atom, whether symbol, keyword or string.
 #[derive(Clone, PartialEq)]
 pub struct Atom {
-    a: A
+    a: A,
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(enum_variant_names))]
@@ -23,7 +23,7 @@ pub struct Atom {
 enum A {
     Symbol(String),
     Keyword(String),
-    String(String)
+    String(String),
 }
 
 impl Atom {
@@ -66,10 +66,15 @@ impl Atom {
     pub fn discriminate(s: String) -> Self {
         if s.starts_with("#:") {
             let (_, keyword) = s.split_at(2);
-            Atom { a: A::Keyword(String::from(keyword)) }
+            Atom {
+                a: A::Keyword(String::from(keyword)),
+            }
         } else if (s.starts_with('"') && s.ends_with('"'))
-               || (s.starts_with("'") && s.ends_with("'")) {
-            Atom { a: A::String(String::from(&s[1..s.len()]))}
+            || (s.starts_with("'") && s.ends_with("'"))
+        {
+            Atom {
+                a: A::String(String::from(&s[1..s.len()])),
+            }
         } else {
             Atom { a: A::Symbol(s) }
         }
@@ -97,9 +102,9 @@ impl Atom {
     #[inline]
     pub fn as_string(&self) -> String {
         let s = match self.a {
-            A::Symbol(ref s)  => s,
+            A::Symbol(ref s) => s,
             A::Keyword(ref s) => s,
-            A::String(ref s)  => s,
+            A::String(ref s) => s,
         };
 
         s.clone()
@@ -122,17 +127,16 @@ impl Debug for Atom {
     }
 }
 
-
 impl Serialize for Atom {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
+    where
         S: Serializer,
     {
         match self.a {
-            A::Symbol(ref s)  => serializer.serialize_newtype_struct("Symbol", s),
+            A::Symbol(ref s) => serializer.serialize_newtype_struct("Symbol", s),
             A::Keyword(ref s) => serializer.serialize_str(s),
-            A::String(ref s)  => serializer.serialize_str(s),
+            A::String(ref s) => serializer.serialize_str(s),
         }
     }
 }
@@ -171,13 +175,12 @@ impl<'de> Deserialize<'de> for Atom {
     }
 }
 
-
 impl<'de> Deserializer<'de> for Atom {
     type Error = Error;
 
     #[inline]
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Error>
-        where
+    where
         V: Visitor<'de>,
     {
         match self.a {
@@ -194,13 +197,12 @@ impl<'de> Deserializer<'de> for Atom {
     }
 }
 
-
 impl<'de, 'a> Deserializer<'de> for &'a Atom {
     type Error = Error;
 
     #[inline]
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Error>
-        where
+    where
         V: Visitor<'de>,
     {
         match self.a {
@@ -223,7 +225,6 @@ impl From<String> for Atom {
         Atom::from_string(String::from(s))
     }
 }
-
 
 impl<'a> From<&'a str> for Atom {
     #[inline]

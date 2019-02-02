@@ -74,12 +74,12 @@
 //!
 use std::string::String;
 
-use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 
+pub use atom::Atom;
 use error::Error;
 pub use number::Number;
-pub use atom::Atom;
 
 mod index;
 pub use self::index::Index;
@@ -174,9 +174,8 @@ pub enum Sexp {
     List(Vec<Sexp>),
 }
 
-mod ser;
 mod de;
-
+mod ser;
 
 impl From<String> for Sexp {
     /// Convert `String` to `Sexp`
@@ -209,9 +208,11 @@ impl Sexp {
     /// let alist_1 = Sexp::new_entry("a", 1)
     /// # }
     /// ```
-    pub fn new_entry<A: Into<Atom>, I: Into<Sexp>> (key: A, value: I) -> Sexp {
-        Sexp::Pair(Some(Box::new(Sexp::Atom(key.into()))),
-                   Some(Box::new(Sexp::from(value.into()))))
+    pub fn new_entry<A: Into<Atom>, I: Into<Sexp>>(key: A, value: I) -> Sexp {
+        Sexp::Pair(
+            Some(Box::new(Sexp::Atom(key.into()))),
+            Some(Box::new(Sexp::from(value.into()))),
+        )
     }
 
     /// Index into a Sexp alist or list. A string index can be used to access a
@@ -279,7 +280,6 @@ impl Sexp {
     //             }
     //         }
     //     }
-
 }
 
 /// Convert a `T` into `sexpr::Sexp` which is an enum that can represent

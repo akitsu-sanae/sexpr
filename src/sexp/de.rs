@@ -14,17 +14,11 @@ use std::str;
 use std::vec;
 
 use serde;
-use serde::de::{
-    Deserialize,
-    DeserializeSeed,
-    Visitor,
-    SeqAccess,
-    MapAccess,
-};
+use serde::de::{Deserialize, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 
+use atom::Atom;
 use error::Error;
 use number::Number;
-use atom::Atom;
 use sexp::Sexp;
 
 impl<'de> Deserialize<'de> for Sexp {
@@ -95,14 +89,13 @@ impl<'de> Deserialize<'de> for Sexp {
 
             #[inline]
             fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Sexp, D::Error>
-                where
+            where
                 D: serde::Deserializer<'de>,
             {
                 // XXX something about this feels wrong
                 let result: String = try!(Deserialize::deserialize(deserializer));
                 Ok(Sexp::Atom(Atom::into_symbol(String::from(result))))
             }
-
 
             #[inline]
             fn visit_seq<V>(self, mut visitor: V) -> Result<Sexp, V::Error>
@@ -151,7 +144,6 @@ impl<'a, 'b> io::Write for WriterFormatter<'a, 'b> {
     }
 }
 
-
 impl fmt::Display for Sexp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let alternate = f.alternate();
@@ -165,7 +157,6 @@ impl fmt::Display for Sexp {
         }
     }
 }
-
 
 impl str::FromStr for Sexp {
     type Err = Error;
@@ -187,9 +178,7 @@ impl<'de> serde::Deserializer<'de> for Sexp {
             Sexp::Boolean(v) => visitor.visit_bool(v),
             Sexp::Number(n) => n.deserialize_any(visitor),
             Sexp::Atom(a) => visitor.visit_string(a.as_string()),
-            Sexp::Pair(_, _) => {
-                unimplemented!()
-            },
+            Sexp::Pair(_, _) => unimplemented!(),
             Sexp::List(v) => {
                 let len = v.len();
                 let mut deserializer = SeqDeserializer::new(v);
@@ -198,7 +187,10 @@ impl<'de> serde::Deserializer<'de> for Sexp {
                 if remaining == 0 {
                     Ok(seq)
                 } else {
-                    Err(serde::de::Error::invalid_length(len, &"fewer elements in array"))
+                    Err(serde::de::Error::invalid_length(
+                        len,
+                        &"fewer elements in array",
+                    ))
                 }
             }
         }
@@ -253,7 +245,9 @@ struct SeqDeserializer {
 
 impl SeqDeserializer {
     fn new(vec: Vec<Sexp>) -> Self {
-        SeqDeserializer { iter: vec.into_iter() }
+        SeqDeserializer {
+            iter: vec.into_iter(),
+        }
     }
 }
 
@@ -274,7 +268,10 @@ impl<'de> serde::Deserializer<'de> for SeqDeserializer {
             if remaining == 0 {
                 Ok(ret)
             } else {
-                Err(serde::de::Error::invalid_length(len, &"fewer elements in array"))
+                Err(serde::de::Error::invalid_length(
+                    len,
+                    &"fewer elements in array",
+                ))
             }
         }
     }
@@ -307,7 +304,6 @@ impl<'de> SeqAccess<'de> for SeqDeserializer {
     }
 }
 
-
 impl<'de> serde::Deserializer<'de> for &'de Sexp {
     type Error = Error;
 
@@ -320,9 +316,7 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
             Sexp::Boolean(v) => visitor.visit_bool(v),
             Sexp::Number(ref n) => n.deserialize_any(visitor),
             Sexp::Atom(ref a) => visitor.visit_borrowed_str(a.as_str()),
-            Sexp::Pair(_, _) => {
-                unimplemented!()
-            },
+            Sexp::Pair(_, _) => unimplemented!(),
             Sexp::List(ref v) => {
                 let len = v.len();
                 let mut deserializer = SeqRefDeserializer::new(v);
@@ -331,7 +325,10 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
                 if remaining == 0 {
                     Ok(seq)
                 } else {
-                    Err(serde::de::Error::invalid_length(len, &"fewer elements in array"))
+                    Err(serde::de::Error::invalid_length(
+                        len,
+                        &"fewer elements in array",
+                    ))
                 }
             }
         }
@@ -378,7 +375,6 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
     }
 }
 
-
 struct SeqRefDeserializer<'de> {
     iter: slice::Iter<'de, Sexp>,
 }
@@ -406,7 +402,10 @@ impl<'de> serde::Deserializer<'de> for SeqRefDeserializer<'de> {
             if remaining == 0 {
                 Ok(ret)
             } else {
-                Err(serde::de::Error::invalid_length(len, &"fewer elements in array"))
+                Err(serde::de::Error::invalid_length(
+                    len,
+                    &"fewer elements in array",
+                ))
             }
         }
     }
