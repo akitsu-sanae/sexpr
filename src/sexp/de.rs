@@ -93,7 +93,7 @@ impl<'de> Deserialize<'de> for Sexp {
                 D: serde::Deserializer<'de>,
             {
                 // XXX something about this feels wrong
-                let result: String = try!(Deserialize::deserialize(deserializer));
+                let result: String = Deserialize::deserialize(deserializer)?;
                 Ok(Sexp::Atom(Atom::new_symbol(result)))
             }
 
@@ -104,7 +104,7 @@ impl<'de> Deserialize<'de> for Sexp {
             {
                 let mut vec = Vec::new();
 
-                while let Some(elem) = try!(visitor.next_element()) {
+                while let Some(elem) = visitor.next_element()? {
                     vec.push(elem);
                 }
 
@@ -134,8 +134,8 @@ impl<'a, 'b> io::Write for WriterFormatter<'a, 'b> {
             // below just map it to fmt::Error
             io::Error::new(io::ErrorKind::Other, "fmt error")
         }
-        let s = try!(str::from_utf8(buf).map_err(io_error));
-        try!(self.inner.write_str(s).map_err(io_error));
+        let s = str::from_utf8(buf).map_err(io_error)?;
+        self.inner.write_str(s).map_err(io_error)?;
         Ok(buf.len())
     }
 
@@ -182,7 +182,7 @@ impl<'de> serde::Deserializer<'de> for Sexp {
             Sexp::List(v) => {
                 let len = v.len();
                 let mut deserializer = SeqDeserializer::new(v);
-                let seq = try!(visitor.visit_seq(&mut deserializer));
+                let seq = visitor.visit_seq(&mut deserializer)?;
                 let remaining = deserializer.iter.len();
                 if remaining == 0 {
                     Ok(seq)
@@ -263,7 +263,7 @@ impl<'de> serde::Deserializer<'de> for SeqDeserializer {
         if len == 0 {
             visitor.visit_unit()
         } else {
-            let ret = try!(visitor.visit_seq(&mut self));
+            let ret = visitor.visit_seq(&mut self)?;
             let remaining = self.iter.len();
             if remaining == 0 {
                 Ok(ret)
@@ -320,7 +320,7 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
             Sexp::List(ref v) => {
                 let len = v.len();
                 let mut deserializer = SeqRefDeserializer::new(v);
-                let seq = try!(visitor.visit_seq(&mut deserializer));
+                let seq = visitor.visit_seq(&mut deserializer)?;
                 let remaining = deserializer.iter.len();
                 if remaining == 0 {
                     Ok(seq)
@@ -397,7 +397,7 @@ impl<'de> serde::Deserializer<'de> for SeqRefDeserializer<'de> {
         if len == 0 {
             visitor.visit_unit()
         } else {
-            let ret = try!(visitor.visit_seq(&mut self));
+            let ret = visitor.visit_seq(&mut self)?;
             let remaining = self.iter.len();
             if remaining == 0 {
                 Ok(ret)

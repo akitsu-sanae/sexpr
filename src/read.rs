@@ -161,7 +161,7 @@ where
         F: FnOnce(&'s Self, &'s [u8]) -> Result<T>,
     {
         loop {
-            let ch = try!(next_or_eof(self));
+            let ch = next_or_eof(self)?;
             if !ESCAPE[ch as usize] {
                 scratch.push(ch);
                 continue;
@@ -171,7 +171,7 @@ where
                     return result(self, scratch);
                 }
                 b'\\' => {
-                    try!(parse_escape(self, scratch));
+                    parse_escape(self, scratch)?;
                 }
                 _ => {
                     if validate {
@@ -189,7 +189,7 @@ where
         F: FnOnce(&'s Self, &'s [u8]) -> Result<T>,
     {
         loop {
-            match try!(self.next().map_err(Error::io)) {
+            match self.next().map_err(Error::io)? {
                 Some(b' ') | Some(b'\n') | Some(b'\t') | Some(b'\r') | Some(b')') | None => {
                     return result(self, scratch);
                 }
@@ -279,10 +279,7 @@ where
 impl<'a> SliceRead<'a> {
     /// Create a JSON input source to read from a slice of bytes.
     pub fn new(slice: &'a [u8]) -> Self {
-        SliceRead {
-            slice,
-            index: 0,
-        }
+        SliceRead { slice, index: 0 }
     }
 
     fn position_of_index(&self, i: usize) -> Position {
@@ -375,7 +372,7 @@ impl<'a> SliceRead<'a> {
                 b'\\' => {
                     scratch.extend_from_slice(&self.slice[start..self.index]);
                     self.index += 1;
-                    try!(parse_escape(self, scratch));
+                    parse_escape(self, scratch)?;
                     start = self.index;
                 }
                 _ => {
@@ -547,7 +544,7 @@ static ESCAPE: [bool; 256] = [
 ];
 
 fn next_or_eof<'de, R: Read<'de>>(read: &mut R) -> Result<u8> {
-    match try!(read.next().map_err(Error::io)) {
+    match read.next().map_err(Error::io)? {
         Some(b) => Ok(b),
         None => error(read, ErrorCode::EofWhileParsingString),
     }
@@ -565,7 +562,7 @@ fn as_str<'de, 's, R: Read<'de>>(read: &R, slice: &'s [u8]) -> Result<&'s str> {
 /// Parses a JSON escape sequence and appends it into the scratch space. Assumes
 /// the previous byte read was a backslash.
 fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Result<()> {
-    let ch = try!(next_or_eof(read));
+    let ch = next_or_eof(read)?;
 
     match ch {
         b'"' => scratch.push(b'"'),
@@ -577,7 +574,7 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
         b'r' => scratch.push(b'\r'),
         b't' => scratch.push(b'\t'),
         b'u' => {
-            let c = match try!(decode_hex_escape(read)) {
+            let c = match decode_hex_escape(read)? {
                 0xDC00...0xDFFF => {
                     return error(read, ErrorCode::LoneLeadingSurrogateInHexEscape);
                 }
@@ -585,14 +582,14 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
                 // Non-BMP characters are encoded as a sequence of
                 // two hex escapes, representing UTF-16 surrogates.
                 n1 @ 0xD800...0xDBFF => {
-                    if try!(next_or_eof(read)) != b'\\' {
+                    if next_or_eof(read)? != b'\\' {
                         return error(read, ErrorCode::UnexpectedEndOfHexEscape);
                     }
-                    if try!(next_or_eof(read)) != b'u' {
+                    if next_or_eof(read)? != b'u' {
                         return error(read, ErrorCode::UnexpectedEndOfHexEscape);
                     }
 
-                    let n2 = try!(decode_hex_escape(read));
+                    let n2 = decode_hex_escape(read)?;
 
                     if n2 < 0xDC00 || n2 > 0xDFFF {
                         return error(read, ErrorCode::LoneLeadingSurrogateInHexEscape);
@@ -633,7 +630,7 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
 fn decode_hex_escape<'de, R: Read<'de>>(read: &mut R) -> Result<u16> {
     let mut n = 0;
     for _ in 0..4 {
-        n = match try!(next_or_eof(read)) {
+        n = match next_or_eof(read)? {
             c @ b'0'...b'9' => n * 16_u16 + (u16::from(c) - u16::from(b'0')),
             b'a' | b'A' => n * 16_u16 + 10_u16,
             b'b' | b'B' => n * 16_u16 + 11_u16,

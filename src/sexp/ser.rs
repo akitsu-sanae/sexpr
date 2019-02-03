@@ -249,7 +249,7 @@ impl serde::ser::SerializeSeq for SerializeVec {
     where
         T: Serialize,
     {
-        self.vec.push(try!(to_value(&value)));
+        self.vec.push(to_value(&value)?);
         Ok(())
     }
 
@@ -298,7 +298,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
     where
         T: Serialize,
     {
-        self.vec.push(try!(to_value(&value)));
+        self.vec.push(to_value(&value)?);
         Ok(())
     }
 
@@ -320,7 +320,7 @@ impl serde::ser::SerializeMap for SerializeMap {
     where
         T: Serialize,
     {
-        match try!(to_value(&key)) {
+        match to_value(&key)? {
             Sexp::Atom(a) => self.next_key = Some(a.as_string()),
             Sexp::Number(n) => {
                 if n.is_u64() || n.is_i64() {
@@ -354,7 +354,7 @@ impl serde::ser::SerializeStruct for SerializeMap {
     where
         T: Serialize,
     {
-        try!(serde::ser::SerializeMap::serialize_key(self, key));
+        serde::ser::SerializeMap::serialize_key(self, key)?;
         serde::ser::SerializeMap::serialize_value(self, value)
     }
 

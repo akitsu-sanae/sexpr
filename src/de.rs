@@ -106,7 +106,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     /// This allows the `Deserializer` to validate that the input stream is at the end or that it
     /// only has trailing whitespace.
     pub fn end(&mut self) -> Result<()> {
-        match try!(self.parse_whitespace()) {
+        match self.parse_whitespace()? {
             Some(_) => Err(self.peek_error(ErrorCode::TrailingCharacters)),
             None => Ok(()),
         }
@@ -136,7 +136,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn peek_or_null(&mut self) -> Result<u8> {
-        Ok(try!(self.peek()).unwrap_or(b'\x00'))
+        Ok(self.peek()?.unwrap_or(b'\x00'))
     }
 
     fn eat_char(&mut self) {
@@ -148,7 +148,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn next_char_or_null(&mut self) -> Result<u8> {
-        Ok(try!(self.next_char()).unwrap_or(b'\x00'))
+        Ok(self.next_char()?.unwrap_or(b'\x00'))
     }
 
     /// Error caused by a byte from next_char().
@@ -167,7 +167,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     /// EOF is encountered.
     fn parse_whitespace(&mut self) -> Result<Option<u8>> {
         loop {
-            match try!(self.peek()) {
+            match self.peek()? {
                 Some(b' ') | Some(b'\n') | Some(b'\t') | Some(b'\r') => {
                     self.eat_char();
                 }
@@ -182,7 +182,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     where
         V: de::Visitor<'de>,
     {
-        let peek = match try!(self.parse_whitespace()) {
+        let peek = match self.parse_whitespace()? {
             Some(b) => b,
             None => {
                 return Err(self.peek_error(ErrorCode::EofWhileParsingValue));
@@ -192,11 +192,11 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         let value = match peek {
             b'#' => {
                 self.eat_char();
-                match try!(self.next_char()) {
+                match self.next_char()? {
                     Some(b't') => visitor.visit_bool(true),
                     Some(b'f') => visitor.visit_bool(false),
                     Some(b'n') => {
-                        try!(self.parse_ident(b"il"));
+                        self.parse_ident(b"il")?;
                         visitor.visit_bool(true)
                     }
                     Some(_) => Err(self.peek_error(ErrorCode::ExpectedSomeIdent)),
@@ -205,13 +205,13 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             }
             b'-' => {
                 self.eat_char();
-                try!(self.parse_integer(false)).visit(visitor)
+                self.parse_integer(false)?.visit(visitor)
             }
-            b'0'...b'9' => try!(self.parse_integer(true)).visit(visitor),
+            b'0'...b'9' => self.parse_integer(true)?.visit(visitor),
             b'"' => {
                 self.eat_char();
                 self.str_buf.clear();
-                match try!(self.read.parse_str(&mut self.str_buf)) {
+                match self.read.parse_str(&mut self.str_buf)? {
                     Reference::Borrowed(s) => visitor.visit_borrowed_str(s),
                     Reference::Copied(s) => visitor.visit_str(s),
                 }
@@ -227,7 +227,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
 
                 self.remaining_depth += 1;
 
-                try!(self.parse_whitespace());
+                self.parse_whitespace()?;
 
                 match (ret, self.end_seq()) {
                     (Ok(ret), Ok(())) => Ok(ret),
@@ -236,7 +236,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             }
             b'a'...b'z' | b'A'...b'Z' => {
                 self.str_buf.clear();
-                match try!(self.read.parse_symbol(&mut self.str_buf)) {
+                match self.read.parse_symbol(&mut self.str_buf)? {
                     Reference::Borrowed(s) => visitor.visit_newtype_struct(Atom::from_str(s)),
                     Reference::Copied(s) => visitor.visit_newtype_struct(Atom::from_str(s)),
                 }
@@ -258,7 +258,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
 
     fn parse_ident(&mut self, ident: &[u8]) -> Result<()> {
         for c in ident {
-            if Some(*c) != try!(self.next_char()) {
+            if Some(*c) != self.next_char()? {
                 return Err(self.error(ErrorCode::ExpectedSomeIdent));
             }
         }
@@ -267,10 +267,10 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn parse_integer(&mut self, pos: bool) -> Result<Number> {
-        match try!(self.next_char_or_null()) {
+        match self.next_char_or_null()? {
             b'0' => {
                 // There can be only one leading '0'.
-                match try!(self.peek_or_null()) {
+                match self.peek_or_null()? {
                     b'0'...b'9' => Err(self.peek_error(ErrorCode::InvalidNumber)),
                     _ => self.parse_number(pos, 0),
                 }
@@ -279,7 +279,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                 let mut res = u64::from(c - b'0');
 
                 loop {
-                    match try!(self.peek_or_null()) {
+                    match self.peek_or_null()? {
                         c @ b'0'...b'9' => {
                             self.eat_char();
                             let digit = u64::from(c - b'0');
@@ -288,11 +288,9 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                             // number as a `u64` until we grow too large. At that point, switch to
                             // parsing the value as a `f64`.
                             if overflow!(res * 10 + digit, u64::MAX) {
-                                return Ok(Number::F64(try!(self.parse_long_integer(
-                                    pos,
-                                    res,
-                                    1, // res * 10^1
-                                ))));
+                                return Ok(Number::F64(self.parse_long_integer(
+                                    pos, res, 1, // res * 10^1
+                                )?));
                             }
 
                             res = res * 10 + digit;
@@ -314,7 +312,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         mut exponent: i32,
     ) -> Result<f64> {
         loop {
-            match try!(self.peek_or_null()) {
+            match self.peek_or_null()? {
                 b'0'...b'9' => {
                     self.eat_char();
                     // This could overflow... if your integer is gigabytes long.
@@ -335,8 +333,8 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn parse_number(&mut self, pos: bool, significand: u64) -> Result<Number> {
-        Ok(match try!(self.peek_or_null()) {
-            b'.' => Number::F64(try!(self.parse_decimal(pos, significand, 0))),
+        Ok(match self.peek_or_null()? {
+            b'.' => Number::F64(self.parse_decimal(pos, significand, 0)?),
             // b'e' | b'E' => Number::F64(try!(self.parse_exponent(pos, significand, 0))),
             _ => {
                 if pos {
@@ -359,7 +357,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         self.eat_char();
 
         let mut at_least_one_digit = false;
-        while let c @ b'0'...b'9' = try!(self.peek_or_null()) {
+        while let c @ b'0'...b'9' = self.peek_or_null()? {
             self.eat_char();
             let digit = u64::from(c - b'0');
             at_least_one_digit = true;
@@ -367,7 +365,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             if overflow!(significand * 10 + digit, u64::MAX) {
                 // The next multiply/add would overflow, so just ignore all
                 // further digits.
-                while let b'0'...b'9' = try!(self.peek_or_null()) {
+                while let b'0'...b'9' = self.peek_or_null()? {
                     self.eat_char();
                 }
                 break;
@@ -381,7 +379,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             return Err(self.peek_error(ErrorCode::InvalidNumber));
         }
 
-        match try!(self.peek_or_null()) {
+        match self.peek_or_null()? {
             // b'e' | b'E' => self.parse_exponent(pos, significand, exponent),
             _ => self.f64_from_parts(pos, significand, exponent),
         }
@@ -418,7 +416,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     fn end_seq(&mut self) -> Result<()> {
-        match try!(self.parse_whitespace()) {
+        match self.parse_whitespace()? {
             Some(b')') => {
                 self.eat_char();
                 Ok(())
@@ -480,10 +478,10 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: de::Visitor<'de>,
     {
-        match try!(self.parse_whitespace()) {
+        match self.parse_whitespace()? {
             Some(b'n') => {
                 self.eat_char();
-                try!(self.parse_ident(b"il"));
+                self.parse_ident(b"il")?;
                 visitor.visit_none()
             }
             _ => visitor.visit_some(self),
@@ -511,7 +509,7 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: de::Visitor<'de>,
     {
-        match try!(self.parse_whitespace()) {
+        match self.parse_whitespace()? {
             Some(b'(') => {
                 self.remaining_depth -= 1;
                 if self.remaining_depth == 0 {
@@ -519,11 +517,11 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
                 }
 
                 self.eat_char();
-                let value = try!(visitor.visit_enum(VariantAccess::new(self)));
+                let value = visitor.visit_enum(VariantAccess::new(self))?;
 
                 self.remaining_depth += 1;
 
-                match try!(self.parse_whitespace()) {
+                match self.parse_whitespace()? {
                     Some(b')') => {
                         self.eat_char();
                         Ok(value)
@@ -543,11 +541,11 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: de::Visitor<'de>,
     {
-        match try!(self.parse_whitespace()) {
+        match self.parse_whitespace()? {
             Some(b'"') => {
                 self.eat_char();
                 self.str_buf.clear();
-                match try!(self.read.parse_str_raw(&mut self.str_buf)) {
+                match self.read.parse_str_raw(&mut self.str_buf)? {
                     Reference::Borrowed(b) => visitor.visit_borrowed_bytes(b),
                     Reference::Copied(b) => visitor.visit_bytes(b),
                 }
@@ -578,10 +576,7 @@ struct SeqAccess<'a, R: 'a> {
 
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        SeqAccess {
-            de,
-            first: true,
-        }
+        SeqAccess { de, first: true }
     }
 }
 
@@ -592,7 +587,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
     where
         T: de::DeserializeSeed<'de>,
     {
-        match try!(self.de.peek()) {
+        match self.de.peek()? {
             Some(b')') => {
                 return Ok(None);
             }
@@ -600,7 +595,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
                 self.de.eat_char();
             }
             Some(_) => {
-                try!(self.de.parse_whitespace());
+                self.de.parse_whitespace()?;
                 if self.first {
                     self.first = false;
                 } else {
@@ -612,7 +607,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
             }
         }
 
-        if try!(self.de.peek()).unwrap() == b')' {
+        if self.de.peek()?.unwrap() == b')' {
             Ok(None)
         } else {
             seed.deserialize(&mut *self.de).map(Some)
@@ -691,7 +686,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::EnumAccess<'de> for UnitVariantAccess<'a, R
     where
         V: de::DeserializeSeed<'de>,
     {
-        let variant = try!(seed.deserialize(&mut *self.de));
+        let variant = seed.deserialize(&mut *self.de)?;
         Ok((variant, self))
     }
 }
@@ -837,10 +832,10 @@ where
     T: de::Deserialize<'de>,
 {
     let mut de = Deserializer::new(read);
-    let value = try!(de::Deserialize::deserialize(&mut de));
+    let value = de::Deserialize::deserialize(&mut de)?;
 
     // Make sure the whole stream has been consumed.
-    try!(de.end());
+    de.end()?;
     Ok(value)
 }
 
