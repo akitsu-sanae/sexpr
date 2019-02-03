@@ -12,14 +12,14 @@ use std::io;
 use std::marker::PhantomData;
 use std::{i32, u64};
 
-use serde::de::{self, Unexpected};
-
 use super::error::{Error, ErrorCode, Result};
+use serde::de::{self, Unexpected};
+use serde::forward_to_deserialize_any;
 
-use read::{self, Reference};
+use crate::read::{self, Reference};
 
-use atom::Atom;
-pub use read::{IoRead, Read, SliceRead, StrRead};
+use crate::atom::Atom;
+pub use crate::read::{IoRead, Read, SliceRead, StrRead};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -740,9 +740,7 @@ impl<'de, 'a, R: Read<'de> + 'a> de::VariantAccess<'de> for UnitVariantAccess<'a
 /// null, boolean, number, or string at the top level are all
 /// errors.
 ///
-/// ```rust,ignore
-/// extern crate sexpr;
-///
+/// ```
 /// use sexpr::{Deserializer, Sexp};
 ///
 /// fn main() {
@@ -851,12 +849,8 @@ where
 /// the Sexp map or some number is too big to fit in the expected primitive
 /// type.
 ///
-/// ```rust,ignore
-/// #[macro_use]
-/// extern crate serde_derive;
-///
-/// extern crate serde;
-/// extern crate sexpr;
+/// ```
+/// use serde_derive::Deserialize;
 ///
 /// use std::error::Error;
 /// use std::fs::File;
@@ -906,12 +900,8 @@ where
 /// missing from the S-expression or some number is too big to fit in the expected
 /// primitive type.
 ///
-/// ```rust,ignore
-/// #[macro_use]
-/// extern crate serde_derive;
-///
-/// extern crate serde;
-/// extern crate sexpr;
+/// ```no_run
+/// use serde_derive::Deserialize;
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct User {
@@ -922,8 +912,8 @@ where
 /// fn main() {
 ///     // The type of `s` is `&[u8]`
 ///     let s = b"(
-///                 (fingerprint \"0xF9BA143B95FF6D82\")
-///                 (location \"Menlo Park, CA\")
+///                 (fingerprint . \"0xF9BA143B95FF6D82\")
+///                 (location . \"Menlo Park, CA\")
 ///               )";
 ///
 ///     let u: User = sexpr::from_slice(s).unwrap();
@@ -949,12 +939,8 @@ where
 /// missing from the S-expression or some number is too big to fit in the expected
 /// primitive type.
 ///
-/// ```rust,ignore
-/// #[macro_use]
-/// extern crate serde_derive;
-///
-/// extern crate serde;
-/// extern crate sexpr;
+/// ```no_run
+/// use serde_derive::Deserialize;
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct User {

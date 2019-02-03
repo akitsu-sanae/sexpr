@@ -6,10 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use error::{Error, ErrorCode};
-use number::Number;
+use crate::error::{Error, ErrorCode};
+use crate::number::Number;
+use crate::sexp::{to_value, Sexp};
 use serde::{self, Serialize};
-use sexp::{to_value, Sexp};
 
 impl Serialize for Sexp {
     #[inline]

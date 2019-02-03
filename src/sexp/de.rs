@@ -13,13 +13,13 @@ use std::slice;
 use std::str;
 use std::vec;
 
-use serde;
 use serde::de::{Deserialize, DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::{self, forward_to_deserialize_any};
 
-use atom::Atom;
-use error::Error;
-use number::Number;
-use sexp::Sexp;
+use crate::atom::Atom;
+use crate::error::Error;
+use crate::number::Number;
+use crate::sexp::Sexp;
 
 impl<'de> Deserialize<'de> for Sexp {
     #[inline]

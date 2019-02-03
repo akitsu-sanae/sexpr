@@ -84,8 +84,6 @@
 //! a TCP stream.
 //!
 //! ```rust,ignore
-//!  extern crate sexpr;
-//!
 //!  use sexpr::{Sexp, Error};
 //!
 //!  fn untyped_example() -> Result<(), Error> {
@@ -119,11 +117,7 @@
 //! structures automatically.
 //!
 //! ```rust,ignore
-//! extern crate serde;
-//! extern crate sexpr;
-//!
-//! #[macro_use]
-//! extern crate serde_derive;
+//! use serde_derive::{Serialize, Deserialize};
 //!
 //! use sexpr::Error;
 //!
@@ -188,11 +182,7 @@
 //! such as a File or a TCP stream.
 //!
 //! ```rust,ignore
-//! extern crate serde;
-//! extern crate sexpr;
-//!
-//! #[macro_use]
-//! extern crate serde_derive;
+//! use serde_derive::{Serialize, Deserialize};
 //!
 //! use sexpr::Error;
 //!
@@ -222,13 +212,6 @@
 //! #     print_an_address().unwrap();
 //! # }
 //! ```
-extern crate num_traits;
-// extern crate core;
-#[macro_use]
-extern crate serde;
-extern crate dtoa;
-extern crate itoa;
-
 #[doc(inline)]
 pub use self::de::{from_reader, from_slice, from_str, Deserializer, StreamDeserializer};
 #[doc(inline)]
@@ -236,7 +219,7 @@ pub use self::error::{Error, Result};
 #[doc(inline)]
 pub use self::sexp::{from_value, to_value, Number, Sexp};
 #[doc(inline)]
-pub use ser::{to_string, Serializer};
+pub use crate::ser::{to_string, Serializer};
 
 #[macro_use]
 mod macros;

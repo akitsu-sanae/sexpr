@@ -167,15 +167,13 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
-    /// #
+    /// ```no_run
+    /// # use sexpr::Sexp;
     /// # fn main() {
-    /// let data = sexpr::from_str("(x . (y . (z zz)))")
+    /// let data: Sexp = sexpr::from_str("(x . (y . (z zz)))").unwrap();
     ///
-    /// assert_eq!(data["x"]["y"], sexpr::from_str("(z zz)"));
-    /// assert_eq!(data["x"]["y"][0], sexpr::from_str("z"));
+    /// assert_eq!(data["x"]["y"], sexpr::from_str("(z zz)").unwrap());
+    /// assert_eq!(data["x"]["y"][0], sexpr::from_str("z").unwrap());
     ///
     /// assert_eq!(data["a"], Sexp::Nil); // returns null for undefined values
     /// assert_eq!(data["a"]["b"], Sexp::Nil); // does not panic
@@ -207,8 +205,6 @@ where
     ///
     /// ```rust,ignore
     /// # #[macro_use]
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// let mut data = sexp!((x . 0));
     ///

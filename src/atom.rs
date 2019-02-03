@@ -5,9 +5,9 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use error::Error;
+use crate::error::Error;
 use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 
 use std::borrow::Cow;

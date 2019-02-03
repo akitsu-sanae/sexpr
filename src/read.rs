@@ -9,7 +9,7 @@
 use std::ops::Deref;
 use std::{char, cmp, io, str};
 
-use iter::LineColIterator;
+use crate::iter::LineColIterator;
 
 use super::error::{Error, ErrorCode, Result};
 

@@ -35,8 +35,6 @@ impl From<f32> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -55,8 +53,6 @@ impl From<f64> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -75,8 +71,6 @@ impl From<bool> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -95,8 +89,6 @@ impl From<String> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -115,8 +107,6 @@ impl<'a> From<&'a str> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -135,8 +125,6 @@ impl<'a> From<Cow<'a, str>> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     /// use std::borrow::Cow;
@@ -147,8 +135,6 @@ impl<'a> From<Cow<'a, str>> for Sexp {
     /// ```
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     /// use std::borrow::Cow;
@@ -168,8 +154,6 @@ impl From<Map<String, Sexp>> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::{Map, Sexp};
     ///
@@ -189,8 +173,6 @@ impl<T: Into<Sexp>> From<Vec<T>> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -209,8 +191,6 @@ impl<'a, T: Clone + Into<Sexp>> From<&'a [T]> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -229,8 +209,6 @@ impl<T: Into<Sexp>> ::std::iter::FromIterator<T> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -240,8 +218,6 @@ impl<T: Into<Sexp>> ::std::iter::FromIterator<T> for Sexp {
     /// ```
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -251,8 +227,6 @@ impl<T: Into<Sexp>> ::std::iter::FromIterator<T> for Sexp {
     /// ```
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use std::iter::FromIterator;
     /// use sexpr::Sexp;

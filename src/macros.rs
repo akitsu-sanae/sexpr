@@ -9,8 +9,7 @@
 /// Construct a `sexpr::Sexp` from a S-expression literal.
 ///
 /// ```rust,ignore
-/// # #[macro_use]
-/// # extern crate sexpr;
+/// # use sexpr::sexp;
 /// #
 /// # fn main() {
 /// let value: Sexp = sexp!((

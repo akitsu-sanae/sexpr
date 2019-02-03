@@ -14,8 +14,7 @@
 //! `sexpr` needs to be imported with the `#[macro_use]` attribute.
 //!
 //! ```rust,ignore
-//! #[macro_use]
-//! extern crate sexpr;
+//! use sexpr::sexp;
 //!
 //! fn main() {
 //!     // The type of `john` is `sexpr::Sexp`
@@ -43,8 +42,6 @@
 //! TCP stream.
 //!
 //! ```rust,ignore
-//! extern crate sexpr;
-//!
 //! use sexpr::{Sexp, Error};
 //!
 //! fn untyped_example() -> Result<(), Error> {
@@ -77,9 +74,9 @@ use std::string::String;
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
 
-pub use atom::Atom;
-use error::Error;
-pub use number::Number;
+pub use crate::atom::Atom;
+use crate::error::Error;
+pub use crate::number::Number;
 
 mod index;
 pub use self::index::Index;
@@ -99,11 +96,10 @@ pub enum Sexp {
     /// Represents a S-expression nil value.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
-    /// let v = sexpr!(#nil);
+    /// let v = sexp!(#nil);
     /// # }
     /// ```
     Nil,
@@ -111,8 +107,7 @@ pub enum Sexp {
     /// Represents a S-expression string, symbol or keyword.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let s = sexp!("string");
@@ -125,8 +120,7 @@ pub enum Sexp {
     /// Represents a S-expression number, whether integer or floating point.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let v = sexp!(12.5);
@@ -137,8 +131,7 @@ pub enum Sexp {
     /// Represents a S-expression boolean.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let v = sexp!(#t);
@@ -149,8 +142,7 @@ pub enum Sexp {
     /// Represents a S-expression cons-pair.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let v = sexp!((a . 1));
@@ -164,8 +156,7 @@ pub enum Sexp {
     /// a list of items or an associative list.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let v = sexp!((a b c));
@@ -183,8 +174,6 @@ impl From<String> for Sexp {
     /// # Examples
     ///
     /// ```rust,ignore
-    /// # extern crate sexpr;
-    /// #
     /// # fn main() {
     /// use sexpr::Sexp;
     ///
@@ -202,7 +191,6 @@ impl Sexp {
     ///
     /// # Examples
     /// ```rust,ignore
-    /// # extern crate sexpr;
     /// # fn main() {
     /// use sexpr::Sexp;
     /// let alist_1 = Sexp::new_entry("a", 1)
@@ -225,8 +213,7 @@ impl Sexp {
     /// or the given index is not within the bounds of the array.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let object = sexp!(((A . 65) (B . 66) (C . 67)));
@@ -244,8 +231,7 @@ impl Sexp {
     /// `None`.
     ///
     /// ```rust,ignore
-    /// # #[macro_use]
-    /// # extern crate sexpr;
+    /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let object = sexp!((
@@ -286,13 +272,9 @@ impl Sexp {
 /// any valid S-expression data.
 ///
 /// ```rust,ignore
-/// extern crate serde;
+/// use serde_derive::{Serialize, Deserialize};
 ///
-/// #[macro_use]
-/// extern crate serde_derive;
-///
-/// #[macro_use]
-/// extern crate sexpr;
+/// use sexpr::sexp;
 ///
 /// use std::error::Error;
 ///
@@ -331,8 +313,6 @@ impl Sexp {
 /// fail, or if `T` contains a map with non-string keys.
 ///
 /// ```rust,ignore
-/// extern crate sexpr;
-///
 /// use std::collections::BTreeMap;
 ///
 /// fn main() {
@@ -364,13 +344,9 @@ where
 /// type.
 ///
 /// ```rust,ignore
-/// #[macro_use]
-/// extern crate sexpr;
+/// use sexpr::sexp;
 ///
-/// #[macro_use]
-/// extern crate serde_derive;
-///
-/// extern crate serde;
+/// use serde_derive::Deserialize;
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct User {
