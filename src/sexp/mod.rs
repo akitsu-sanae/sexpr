@@ -211,7 +211,7 @@ impl Sexp {
     pub fn new_entry<A: Into<Atom>, I: Into<Sexp>>(key: A, value: I) -> Sexp {
         Sexp::Pair(
             Some(Box::new(Sexp::Atom(key.into()))),
-            Some(Box::new(Sexp::from(value.into()))),
+            Some(Box::new(value.into())),
         )
     }
 
@@ -343,7 +343,7 @@ impl Sexp {
 ///     println!("{}", sexpr::to_value(map).unwrap_err());
 /// }
 /// ```
-#[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
+
 // Taking by value is more friendly to iterator adapters, option and result
 // consumers, etc.
 pub fn to_value<T>(value: T) -> Result<Sexp, Error>

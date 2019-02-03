@@ -57,8 +57,8 @@ where
     #[inline]
     pub fn with_formatter(writer: W, formatter: F) -> Self {
         Serializer {
-            writer: writer,
-            formatter: formatter,
+            writer,
+            formatter,
         }
     }
 
@@ -1434,7 +1434,7 @@ impl<'a> PrettyFormatter<'a> {
         PrettyFormatter {
             current_indent: 0,
             has_value: false,
-            indent: indent,
+            indent,
         }
     }
 }
@@ -1608,7 +1608,7 @@ const U: u8 = b'u'; // \x00...\x1F except the ones above
 
 // Lookup table of escape sequences. A value of b'x' at index i means that byte
 // i is escaped as "\x" in S-expression. A value of 0 means that byte i is not escaped.
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static ESCAPE: [u8; 256] = [
     //  1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
     U,  U,  U,  U,  U,  U,  U,  U, BB, TT, NN,  U, FF, RR,  U,  U, // 0

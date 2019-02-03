@@ -44,7 +44,7 @@ where
     ///   - Deserializer::from_reader
     pub fn new(read: R) -> Self {
         Deserializer {
-            read: read,
+            read,
             str_buf: Vec::with_capacity(128),
             remaining_depth: 128,
         }
@@ -70,6 +70,7 @@ impl<'a> Deserializer<read::SliceRead<'a>> {
 
 impl<'a> Deserializer<read::StrRead<'a>> {
     /// Creates a S-expression deserializer from a `&str`.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &'a str) -> Self {
         Deserializer::new(read::StrRead::new(s))
     }
@@ -112,6 +113,9 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 
     /// Turn a Sexp deserializer into an iterator over values of type T.
+    // TODO: Deserializer<R> cannot implement `IntoIterator`, as the
+    // returned iterator is generic over `T`.
+    #[allow(clippy::should_implement_trait)]
     pub fn into_iter<T>(self) -> StreamDeserializer<'de, R, T>
     where
         T: de::Deserialize<'de>,
@@ -121,7 +125,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         let offset = self.read.byte_offset();
         StreamDeserializer {
             de: self,
-            offset: offset,
+            offset,
             output: PhantomData,
             lifetime: PhantomData,
         }
@@ -272,13 +276,13 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                 }
             }
             c @ b'1'...b'9' => {
-                let mut res = (c - b'0') as u64;
+                let mut res = u64::from(c - b'0');
 
                 loop {
                     match try!(self.peek_or_null()) {
                         c @ b'0'...b'9' => {
                             self.eat_char();
-                            let digit = (c - b'0') as u64;
+                            let digit = u64::from(c - b'0');
 
                             // We need to be careful with overflow. If we can, try to keep the
                             // number as a `u64` until we grow too large. At that point, switch to
@@ -357,7 +361,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         let mut at_least_one_digit = false;
         while let c @ b'0'...b'9' = try!(self.peek_or_null()) {
             self.eat_char();
-            let digit = (c - b'0') as u64;
+            let digit = u64::from(c - b'0');
             at_least_one_digit = true;
 
             if overflow!(significand * 10 + digit, u64::MAX) {
@@ -425,7 +429,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static POW10: [f64; 309] =
     [1e000, 1e001, 1e002, 1e003, 1e004, 1e005, 1e006, 1e007, 1e008, 1e009,
      1e010, 1e011, 1e012, 1e013, 1e014, 1e015, 1e016, 1e017, 1e018, 1e019,
@@ -575,7 +579,7 @@ struct SeqAccess<'a, R: 'a> {
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
         SeqAccess {
-            de: de,
+            de,
             first: true,
         }
     }
@@ -624,7 +628,7 @@ struct VariantAccess<'a, R: 'a> {
 
 impl<'a, R: 'a> VariantAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        VariantAccess { de: de }
+        VariantAccess { de }
     }
 }
 
@@ -675,7 +679,7 @@ struct UnitVariantAccess<'a, R: 'a> {
 
 impl<'a, R: 'a> UnitVariantAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        UnitVariantAccess { de: de }
+        UnitVariantAccess { de }
     }
 }
 
@@ -780,7 +784,7 @@ where
         let offset = read.byte_offset();
         StreamDeserializer {
             de: Deserializer::new(read),
-            offset: offset,
+            offset,
             output: PhantomData,
             lifetime: PhantomData,
         }

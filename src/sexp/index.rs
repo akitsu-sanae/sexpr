@@ -65,7 +65,7 @@ impl Index for usize {
 impl Index for str {
     fn index_into<'v>(&self, v: &'v Sexp) -> Option<&'v Sexp> {
         match v {
-            &Sexp::List(_) => v.get(self),
+            Sexp::List(_) => v.get(self),
             _ => None,
         }
     }

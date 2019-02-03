@@ -18,7 +18,6 @@ pub struct Atom {
     a: A,
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(enum_variant_names))]
 #[derive(Clone, Debug, PartialEq)]
 enum A {
     Symbol(String),
@@ -51,11 +50,11 @@ impl Atom {
         }
     }
 
-    pub fn into_string(s: String) -> Self {
+    pub fn new_string(s: String) -> Self {
         Atom { a: A::String(s) }
     }
 
-    pub fn into_symbol(s: String) -> Self {
+    pub fn new_symbol(s: String) -> Self {
         Atom { a: A::Symbol(s) }
     }
 
@@ -70,7 +69,7 @@ impl Atom {
                 a: A::Keyword(String::from(keyword)),
             }
         } else if (s.starts_with('"') && s.ends_with('"'))
-            || (s.starts_with("'") && s.ends_with("'"))
+            || (s.starts_with('\'') && s.ends_with('\''))
         {
             Atom {
                 a: A::String(String::from(&s[1..s.len()])),
@@ -81,6 +80,7 @@ impl Atom {
     }
 
     #[inline]
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         Atom::discriminate(String::from(s))
     }
@@ -91,7 +91,7 @@ impl Atom {
     }
 
     #[inline]
-    pub fn as_str<'a>(&'a self) -> &'a str {
+    pub fn as_str(&self) -> &str {
         match self.a {
             A::Symbol(ref s) => s,
             A::Keyword(ref s) => s,
@@ -156,11 +156,13 @@ impl<'de> Deserialize<'de> for Atom {
                 formatter.write_str("an atom")
             }
 
-            // #[inline]
-            // fn visit_str<E>(self, value: &str) -> Result<Atom, E>
-            // {
-            //     self.visit_string(String::from(value))
-            // }
+            #[inline]
+            fn visit_str<E>(self, value: &str) -> Result<Atom, E>
+            where
+                E: de::Error,
+            {
+                self.visit_string(String::from(value))
+            }
 
             #[inline]
             fn visit_string<E>(self, value: String) -> Result<Atom, E>
@@ -222,7 +224,7 @@ impl<'de, 'a> Deserializer<'de> for &'a Atom {
 impl From<String> for Atom {
     #[inline]
     fn from(s: String) -> Self {
-        Atom::from_string(String::from(s))
+        Atom::from_string(s)
     }
 }
 

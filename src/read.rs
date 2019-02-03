@@ -280,7 +280,7 @@ impl<'a> SliceRead<'a> {
     /// Create a JSON input source to read from a slice of bytes.
     pub fn new(slice: &'a [u8]) -> Self {
         SliceRead {
-            slice: slice,
+            slice,
             index: 0,
         }
     }
@@ -525,7 +525,7 @@ const O: bool = false; // allow unescaped
 
 // Lookup table of bytes that must be escaped. A value of true at index i means
 // that byte i requires an escape sequence in the input.
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static ESCAPE: [bool; 256] = [
     //   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
     CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, CT, // 0
@@ -598,7 +598,7 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
                         return error(read, ErrorCode::LoneLeadingSurrogateInHexEscape);
                     }
 
-                    let n = (((n1 - 0xD800) as u32) << 10 | (n2 - 0xDC00) as u32) + 0x1_0000;
+                    let n = ((u32::from(n1 - 0xD800) << 10) | u32::from(n2 - 0xDC00)) + 0x1_0000;
 
                     match char::from_u32(n as u32) {
                         Some(c) => c,
@@ -608,7 +608,7 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
                     }
                 }
 
-                n => match char::from_u32(n as u32) {
+                n => match char::from_u32(u32::from(n)) {
                     Some(c) => c,
                     None => {
                         return error(read, ErrorCode::InvalidUnicodeCodePoint);
@@ -634,7 +634,7 @@ fn decode_hex_escape<'de, R: Read<'de>>(read: &mut R) -> Result<u16> {
     let mut n = 0;
     for _ in 0..4 {
         n = match try!(next_or_eof(read)) {
-            c @ b'0'...b'9' => n * 16_u16 + ((c as u16) - (b'0' as u16)),
+            c @ b'0'...b'9' => n * 16_u16 + (u16::from(c) - u16::from(b'0')),
             b'a' | b'A' => n * 16_u16 + 10_u16,
             b'b' | b'B' => n * 16_u16 + 11_u16,
             b'c' | b'C' => n * 16_u16 + 12_u16,

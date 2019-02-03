@@ -66,7 +66,7 @@ impl<'de> Deserialize<'de> for Sexp {
 
             #[inline]
             fn visit_string<E>(self, value: String) -> Result<Sexp, E> {
-                Ok(Sexp::Atom(Atom::into_string(value)))
+                Ok(Sexp::Atom(Atom::new_string(value)))
             }
 
             #[inline]
@@ -94,7 +94,7 @@ impl<'de> Deserialize<'de> for Sexp {
             {
                 // XXX something about this feels wrong
                 let result: String = try!(Deserialize::deserialize(deserializer));
-                Ok(Sexp::Atom(Atom::into_symbol(String::from(result))))
+                Ok(Sexp::Atom(Atom::new_symbol(result)))
             }
 
             #[inline]

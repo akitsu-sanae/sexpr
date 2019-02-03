@@ -14,7 +14,6 @@ pub struct Number {
 
 // "N" is a prefix of "NegInt"... this is a false positive.
 // https://github.com/Manishearth/rust-clippy/issues/1241
-#[cfg_attr(feature = "cargo-clippy", allow(enum_variant_names))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum N {
     PosInt(u64),
@@ -203,6 +202,8 @@ macro_rules! from_signed {
     ($($signed_ty:ident)*) => {
         $(
             impl From<$signed_ty> for Number {
+                // TODO: code broken when isize has more than 64 bits
+                #[allow(clippy::cast_lossless)]
                 #[inline]
                 fn from(i: $signed_ty) -> Self {
                     if i < 0 {
@@ -220,6 +221,8 @@ macro_rules! from_unsigned {
     ($($unsigned_ty:ident)*) => {
         $(
             impl From<$unsigned_ty> for Number {
+                // TODO: code broken when usize has more than 64 bits
+                #[allow(clippy::cast_lossless)]
                 #[inline]
                 fn from(u: $unsigned_ty) -> Self {
                     Number { n: N::PosInt(u as u64) }
