@@ -562,9 +562,39 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
         self.deserialize_bytes(visitor)
     }
 
+    fn deserialize_struct<V>(
+        self,
+        _name: &'static str,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        let peek = match self.parse_whitespace()? {
+            Some(b) => b,
+            None => {
+                return Err(self.peek_error(ErrorCode::EofWhileParsingValue));
+            }
+        };
+        let value = match peek {
+            b'(' => {
+                self.eat_char();
+                let ret = visitor.visit_map(MapAccess::new(self))?;
+                self.end_seq()?;
+                Ok(ret)
+            }
+            _ => Err(self.peek_error(ErrorCode::ExpectedList)),
+        };
+        match value {
+            Ok(value) => Ok(value),
+            Err(err) => Err(err.fix_position(|code| self.error(code))),
+        }
+    }
+
     forward_to_deserialize_any! {
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string unit
-            unit_struct seq tuple tuple_struct map struct identifier ignored_any
+            unit_struct seq tuple tuple_struct map identifier ignored_any
     }
 }
 
@@ -616,6 +646,156 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
 }
 
 // END POSSIBLY BROKEN --------------------------------------------------------
+
+/// Deserialize an association list (alist) as a map.
+///
+/// An alist has the a shape of `((key1 . v1) (key2 . v2) ...)`. Note
+/// that the keys may be either strings or symbols. When the values
+/// are themselves lists, the dot may be omitted, for example, the
+/// following two expressions are identical:
+///
+/// ```lisp
+/// ((key some values))
+/// ```
+///
+/// ```lisp
+/// ((key . (some values)))
+/// ```
+struct MapAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+
+impl<'a, R: 'a> MapAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        MapAccess { de }
+    }
+}
+
+impl<'de, 'a, R: Read<'de> + 'a> de::MapAccess<'de> for MapAccess<'a, R> {
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+    where
+        K: de::DeserializeSeed<'de>,
+    {
+        match self.de.parse_whitespace()? {
+            Some(b')') => return Ok(None),
+            Some(b'(') => {
+                self.de.eat_char();
+            }
+            Some(_) => {
+                return Err(self.de.peek_error(ErrorCode::ExpectedList));
+            }
+            None => {
+                return Err(self.de.peek_error(ErrorCode::EofWhileParsingAlist));
+            }
+        };
+        seed.deserialize(MapKey { de: &mut *self.de }).map(Some)
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+        let value = match self.de.parse_whitespace()? {
+            Some(b'.') => {
+                self.de.eat_char();
+                seed.deserialize(&mut *self.de)?
+            }
+            Some(_) => seed.deserialize(MapSeqValue::new(self.de))?,
+            None => return Err(self.de.peek_error(ErrorCode::EofWhileParsingAlist)),
+        };
+        match self.de.parse_whitespace()? {
+            Some(b')') => {
+                self.de.eat_char();
+                Ok(value)
+            }
+            Some(_) => Err(self.de.peek_error(ErrorCode::TrailingCharacters)),
+            None => Err(self.de.peek_error(ErrorCode::EofWhileParsingAlist)),
+        }
+    }
+}
+
+// To be used after consuming the initial open parenthesis of an
+// association list item.
+struct MapKey<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+
+impl<'de, 'a, R> de::Deserializer<'de> for MapKey<'a, R>
+where
+    R: Read<'de>,
+{
+    type Error = Error;
+
+    #[inline]
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        // TODO: this is duplicated from `parse_value`. Find out about
+        // the relationship between symbols and newtype structs.
+        match self.de.parse_whitespace()? {
+            Some(b) => match b {
+                b'"' => {
+                    self.de.eat_char();
+                    self.de.str_buf.clear();
+                    match self.de.read.parse_str(&mut self.de.str_buf)? {
+                        Reference::Borrowed(s) => visitor.visit_borrowed_str(s),
+                        Reference::Copied(s) => visitor.visit_str(s),
+                    }
+                }
+                b'a'...b'z' | b'A'...b'Z' => {
+                    self.de.str_buf.clear();
+                    match self.de.read.parse_symbol(&mut self.de.str_buf)? {
+                        Reference::Borrowed(s) => visitor.visit_borrowed_str(s),
+                        Reference::Copied(s) => visitor.visit_str(s),
+                    }
+                }
+                _ => Err(self.de.peek_error(ErrorCode::ExpectedSomeIdent)), // TODO: inaccurate error code
+            },
+            None => Err(self.de.peek_error(ErrorCode::EofWhileParsingAlist)),
+        }
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string unit unit_struct seq tuple tuple_struct map
+        bytes byte_buf option newtype_struct enum
+        struct identifier ignored_any
+    }
+}
+
+// To be used after consuming the field name (key) of an alist item
+struct MapSeqValue<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+
+impl<'a, R: 'a> MapSeqValue<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        Self { de }
+    }
+}
+
+impl<'de, 'a, R> de::Deserializer<'de> for MapSeqValue<'a, R>
+where
+    R: Read<'de>,
+{
+    type Error = Error;
+
+    #[inline]
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_seq(SeqAccess::new(self.de))
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string unit unit_struct seq tuple tuple_struct map
+        bytes byte_buf option newtype_struct enum
+        struct identifier ignored_any
+    }
+}
 
 struct VariantAccess<'a, R: 'a> {
     de: &'a mut Deserializer<R>,
@@ -900,7 +1080,7 @@ where
 /// missing from the S-expression or some number is too big to fit in the expected
 /// primitive type.
 ///
-/// ```no_run
+/// ```
 /// use serde_derive::Deserialize;
 ///
 /// #[derive(Deserialize, Debug)]
@@ -939,7 +1119,7 @@ where
 /// missing from the S-expression or some number is too big to fit in the expected
 /// primitive type.
 ///
-/// ```no_run
+/// ```
 /// use serde_derive::Deserialize;
 ///
 /// #[derive(Deserialize, Debug)]
@@ -964,4 +1144,43 @@ where
     T: de::Deserialize<'a>,
 {
     from_trait(read::StrRead::new(s))
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_derive::Deserialize;
+
+    #[derive(Eq, PartialEq, Deserialize, Debug)]
+    struct User {
+        fingerprint: String,
+        location: String,
+    }
+
+    #[test]
+    fn test_struct_symbol_keys() {
+        let s = "((fingerprint . \"0xF9BA143B95FF6D82\")
+                  (location . \"Menlo Park, CA\"))";
+        let user: User = super::from_str(s).unwrap();
+        assert_eq!(
+            user,
+            User {
+                fingerprint: "0xF9BA143B95FF6D82".into(),
+                location: "Menlo Park, CA".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn test_struct_string_keys() {
+        let s = "((\"fingerprint\" . \"0xF9BA143B95FF6D82\")
+                  (\"location\" . \"Menlo Park, CA\"))";
+        let user: User = super::from_str(s).unwrap();
+        assert_eq!(
+            user,
+            User {
+                fingerprint: "0xF9BA143B95FF6D82".into(),
+                location: "Menlo Park, CA".into(),
+            }
+        );
+    }
 }

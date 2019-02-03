@@ -214,7 +214,7 @@ pub enum ErrorCode {
     /// Expected this character to be either a `'.'` or a `')'`.
     ExpectedPairOrEnd,
 
-    /// Expected this character to be either a `'('`
+    /// Expected this character to be `'('`
     ExpectedList,
 
     /// Expected to parse either a `#t`, `#f`, or a `#nil`.
