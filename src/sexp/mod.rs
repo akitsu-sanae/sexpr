@@ -184,6 +184,10 @@ impl Sexp {
         )
     }
 
+    pub fn new_keyword(name: impl Into<String>) -> Sexp {
+        Sexp::Atom(Atom::Keyword(name.into()))
+    }
+
     /// Index into a Sexp alist or list. A string index can be used to access a
     /// value in an alist, and a usize index can be used to access an element of an
     /// list.

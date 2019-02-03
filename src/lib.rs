@@ -212,6 +212,11 @@
 //! #     print_an_address().unwrap();
 //! # }
 //! ```
+use proc_macro_hack::proc_macro_hack;
+
+#[proc_macro_hack]
+pub use sexpr_macros::sexp;
+
 #[doc(inline)]
 pub use self::de::{from_reader, from_slice, from_str, Deserializer, StreamDeserializer};
 #[doc(inline)]
@@ -220,9 +225,6 @@ pub use self::error::{Error, Result};
 pub use self::sexp::{from_value, to_value, Number, Sexp};
 #[doc(inline)]
 pub use crate::ser::{to_string, Serializer};
-
-#[macro_use]
-mod macros;
 
 pub mod de;
 pub mod error;
