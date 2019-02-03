@@ -8,18 +8,13 @@
 use error::Error;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{self, Debug, Display};
+use std::fmt::{self, Display};
 
 use std::borrow::Cow;
 
 /// Represents a Sexp atom, whether symbol, keyword or string.
-#[derive(Clone, PartialEq)]
-pub struct Atom {
-    a: A,
-}
-
 #[derive(Clone, Debug, PartialEq)]
-enum A {
+pub enum Atom {
     Symbol(String),
     Keyword(String),
     String(String),
@@ -27,35 +22,35 @@ enum A {
 
 impl Atom {
     pub fn is_symbol(&self) -> bool {
-        match self.a {
-            A::Symbol(_) => true,
-            A::Keyword(_) => false,
-            A::String(_) => false,
+        match self {
+            Atom::Symbol(_) => true,
+            Atom::Keyword(_) => false,
+            Atom::String(_) => false,
         }
     }
 
     pub fn is_keyword(&self) -> bool {
-        match self.a {
-            A::Symbol(_) => false,
-            A::Keyword(_) => true,
-            A::String(_) => false,
+        match self {
+            Atom::Symbol(_) => false,
+            Atom::Keyword(_) => true,
+            Atom::String(_) => false,
         }
     }
 
     pub fn is_string(&self) -> bool {
-        match self.a {
-            A::Symbol(_) => false,
-            A::Keyword(_) => false,
-            A::String(_) => true,
+        match self {
+            Atom::Symbol(_) => false,
+            Atom::Keyword(_) => false,
+            Atom::String(_) => true,
         }
     }
 
     pub fn new_string(s: String) -> Self {
-        Atom { a: A::String(s) }
+        Atom::String(s)
     }
 
     pub fn new_symbol(s: String) -> Self {
-        Atom { a: A::Symbol(s) }
+        Atom::Symbol(s)
     }
 
     /// Returns an Atom appropriate for it's contents.
@@ -65,17 +60,13 @@ impl Atom {
     pub fn discriminate(s: String) -> Self {
         if s.starts_with("#:") {
             let (_, keyword) = s.split_at(2);
-            Atom {
-                a: A::Keyword(String::from(keyword)),
-            }
+            Atom::Keyword(String::from(keyword))
         } else if (s.starts_with('"') && s.ends_with('"'))
             || (s.starts_with('\'') && s.ends_with('\''))
         {
-            Atom {
-                a: A::String(String::from(&s[1..s.len()])),
-            }
+            Atom::String(String::from(&s[1..s.len()]))
         } else {
-            Atom { a: A::Symbol(s) }
+            Atom::Symbol(s)
         }
     }
 
@@ -92,19 +83,19 @@ impl Atom {
 
     #[inline]
     pub fn as_str(&self) -> &str {
-        match self.a {
-            A::Symbol(ref s) => s,
-            A::Keyword(ref s) => s,
-            A::String(ref s) => s,
+        match self {
+            Atom::Symbol(ref s) => s,
+            Atom::Keyword(ref s) => s,
+            Atom::String(ref s) => s,
         }
     }
 
     #[inline]
     pub fn as_string(&self) -> String {
-        let s = match self.a {
-            A::Symbol(ref s) => s,
-            A::Keyword(ref s) => s,
-            A::String(ref s) => s,
+        let s = match self {
+            Atom::Symbol(ref s) => s,
+            Atom::Keyword(ref s) => s,
+            Atom::String(ref s) => s,
         };
 
         s.clone()
@@ -113,17 +104,11 @@ impl Atom {
 
 impl fmt::Display for Atom {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        match self.a {
-            A::Symbol(ref s) => Display::fmt(&s, formatter),
-            A::Keyword(ref s) => Display::fmt(&s, formatter),
-            A::String(ref s) => Display::fmt(&s, formatter),
+        match self {
+            Atom::Symbol(ref s) => Display::fmt(&s, formatter),
+            Atom::Keyword(ref s) => Display::fmt(&s, formatter),
+            Atom::String(ref s) => Display::fmt(&s, formatter),
         }
-    }
-}
-
-impl Debug for Atom {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        Debug::fmt(&self.a, formatter)
     }
 }
 
@@ -133,10 +118,10 @@ impl Serialize for Atom {
     where
         S: Serializer,
     {
-        match self.a {
-            A::Symbol(ref s) => serializer.serialize_newtype_struct("Symbol", s),
-            A::Keyword(ref s) => serializer.serialize_str(s),
-            A::String(ref s) => serializer.serialize_str(s),
+        match self {
+            Atom::Symbol(ref s) => serializer.serialize_newtype_struct("Symbol", s),
+            Atom::Keyword(ref s) => serializer.serialize_str(s),
+            Atom::String(ref s) => serializer.serialize_str(s),
         }
     }
 }
@@ -185,10 +170,10 @@ impl<'de> Deserializer<'de> for Atom {
     where
         V: Visitor<'de>,
     {
-        match self.a {
-            A::Symbol(s) => visitor.visit_string(s),
-            A::Keyword(s) => visitor.visit_string(s),
-            A::String(s) => visitor.visit_string(s),
+        match self {
+            Atom::Symbol(s) => visitor.visit_string(s),
+            Atom::Keyword(s) => visitor.visit_string(s),
+            Atom::String(s) => visitor.visit_string(s),
         }
     }
 
@@ -207,10 +192,10 @@ impl<'de, 'a> Deserializer<'de> for &'a Atom {
     where
         V: Visitor<'de>,
     {
-        match self.a {
-            A::Symbol(ref s) => visitor.visit_string(s.clone()),
-            A::Keyword(ref s) => visitor.visit_string(s.clone()),
-            A::String(ref s) => visitor.visit_string(s.clone()),
+        match self {
+            Atom::Symbol(ref s) => visitor.visit_string(s.clone()),
+            Atom::Keyword(ref s) => visitor.visit_string(s.clone()),
+            Atom::String(ref s) => visitor.visit_string(s.clone()),
         }
     }
 
