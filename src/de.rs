@@ -227,8 +227,6 @@ impl<'de, R: Read<'de>> Deserializer<R> {
 
                 self.remaining_depth += 1;
 
-                self.parse_whitespace()?;
-
                 match (ret, self.end_seq()) {
                     (Ok(ret), Ok(())) => Ok(ret),
                     (Err(err), _) | (_, Err(err)) => Err(err),
@@ -598,15 +596,13 @@ impl<'de, 'a, R: Read<'de>> de::Deserializer<'de> for &'a mut Deserializer<R> {
     }
 }
 
-// POSSIBLY BROKEN --------------------------------------------------------
 struct SeqAccess<'a, R: 'a> {
     de: &'a mut Deserializer<R>,
-    first: bool,
 }
 
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        SeqAccess { de, first: true }
+        SeqAccess { de }
     }
 }
 
@@ -617,35 +613,20 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
     where
         T: de::DeserializeSeed<'de>,
     {
-        match self.de.peek()? {
-            Some(b')') => {
-                return Ok(None);
-            }
-            Some(b' ') => {
-                self.de.eat_char();
+        match self.de.parse_whitespace()? {
+            Some(b')') => Ok(None),
+            Some(b'.') => {
+                unimplemented!()
             }
             Some(_) => {
-                self.de.parse_whitespace()?;
-                if self.first {
-                    self.first = false;
-                } else {
-                    return Err(self.de.peek_error(ErrorCode::ExpectedListEltOrEnd));
-                }
+                seed.deserialize(&mut *self.de).map(Some)
             }
             None => {
-                return Err(self.de.peek_error(ErrorCode::EofWhileParsingList));
+                Err(self.de.peek_error(ErrorCode::EofWhileParsingList))
             }
-        }
-
-        if self.de.peek()?.unwrap() == b')' {
-            Ok(None)
-        } else {
-            seed.deserialize(&mut *self.de).map(Some)
         }
     }
 }
-
-// END POSSIBLY BROKEN --------------------------------------------------------
 
 /// Deserialize an association list (alist) as a map.
 ///
@@ -1149,6 +1130,23 @@ where
 #[cfg(test)]
 mod tests {
     use serde_derive::Deserialize;
+    use crate::Sexp;
+
+    #[test]
+    fn test_value() {
+        let s = "((fingerprint . \"0xF9BA143B95FF6D82\")
+                  (location . \"Menlo Park, CA\"))";
+        let value: Sexp = super::from_str(s).unwrap();
+        assert_eq!(
+            value,
+            [
+                ("fingerprint", "0xF9BA143B95FF6D82"),
+                ("location", "Menlo Park, CA"),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
 
     #[derive(Eq, PartialEq, Deserialize, Debug)]
     struct User {
