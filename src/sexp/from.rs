@@ -9,8 +9,8 @@
 use std::borrow::Cow;
 
 use super::Sexp;
-use map::Map;
-use number::Number;
+use crate::atom::Atom;
+use crate::number::Number;
 
 macro_rules! from_integer {
     ($($ty:ident)*) => {
@@ -61,7 +61,7 @@ impl From<f64> for Sexp {
     /// # }
     /// ```
     fn from(f: f64) -> Self {
-        Number::from_f64(f).map_or(Sexp::Null, Sexp::Number)
+        Number::from_f64(f).map_or(Sexp::Nil, Sexp::Number)
     }
 }
 
@@ -144,26 +144,7 @@ impl<'a> From<Cow<'a, str>> for Sexp {
     /// # }
     /// ```
     fn from(f: Cow<'a, str>) -> Self {
-        Sexp::Atom(Atom::from_string(f))
-    }
-}
-
-impl From<Map<String, Sexp>> for Sexp {
-    /// Convert map (with string keys) to `Sexp`
-    ///
-    /// # Examples
-    ///
-    /// ```rust,ignore
-    /// # fn main() {
-    /// use sexpr::{Map, Sexp};
-    ///
-    /// let mut m = Map::new();
-    /// m.insert("Lorem".to_string(), "ipsum".into());
-    /// let x: Sexp = m.into();
-    /// # }
-    /// ```
-    fn from(f: Map<String, Sexp>) -> Self {
-        unimplemented!()
+        Sexp::Atom(Atom::from_string(f.into()))
     }
 }
 
@@ -200,6 +181,15 @@ impl<'a, T: Clone + Into<Sexp>> From<&'a [T]> for Sexp {
     /// ```
     fn from(f: &'a [T]) -> Self {
         Sexp::List(f.into_iter().cloned().map(Into::into).collect())
+    }
+}
+
+impl<T: Clone + Into<Sexp>, U: Clone + Into<Sexp>> From<&(T, U)> for Sexp {
+    fn from(pair: &(T, U)) -> Self {
+        Sexp::Pair(
+            Some(Box::new(pair.0.clone().into())),
+            Some(Box::new(pair.1.clone().into())),
+        )
     }
 }
 

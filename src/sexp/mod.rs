@@ -41,7 +41,7 @@
 //! [`from_reader`][from_reader] for parsing from any `io::Read` like a File or a
 //! TCP stream.
 //!
-//! ```rust,ignore
+//! ```
 //! use sexpr::{Sexp, Error};
 //!
 //! fn untyped_example() -> Result<(), Error> {
@@ -69,8 +69,6 @@
 //! # }
 //! ```
 //!
-use std::string::String;
-
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
 
@@ -78,6 +76,7 @@ pub use crate::atom::Atom;
 use crate::error::Error;
 pub use crate::number::Number;
 
+mod from;
 mod index;
 pub use self::index::Index;
 
@@ -167,24 +166,6 @@ pub enum Sexp {
 
 mod de;
 mod ser;
-
-impl From<String> for Sexp {
-    /// Convert `String` to `Sexp`
-    ///
-    /// # Examples
-    ///
-    /// ```rust,ignore
-    /// # fn main() {
-    /// use sexpr::Sexp;
-    ///
-    /// let s: String = "lorem".to_string();
-    /// let x: Sexp = s.into();
-    /// # }
-    /// ```
-    fn from(f: String) -> Self {
-        Sexp::Atom(Atom::from_string(f))
-    }
-}
 
 impl Sexp {
     /// Return a new Sexp::Pair with a symbol key
