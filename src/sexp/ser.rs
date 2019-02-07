@@ -23,10 +23,7 @@ impl Serialize for Sexp {
             Sexp::Number(ref n) => n.serialize(serializer),
             Sexp::Atom(ref atom) => atom.serialize(serializer),
             Sexp::List(ref v) => v.serialize(serializer),
-            Sexp::Pair(_, _) => unimplemented!(),
-            // Sexp::Pair(Some(_), None) => unimplemented!(),
-            // Sexp::Pair(None, Some(_)) => unimplemented!(),
-            // Sexp::Pair(None, None)  => unimplemented!(),
+            Sexp::ImproperList(_, _) => unimplemented!(),
         }
     }
 }

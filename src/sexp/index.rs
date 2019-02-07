@@ -124,7 +124,7 @@ impl<'a> fmt::Display for Type<'a> {
             Sexp::Number(_) => formatter.write_str("number"),
             Sexp::Atom(_) => formatter.write_str("atom"),
             Sexp::List(_) => formatter.write_str("list"),
-            Sexp::Pair(_, _) => formatter.write_str("pair"),
+            Sexp::ImproperList(_, _) => formatter.write_str("improper-list"),
         }
     }
 }

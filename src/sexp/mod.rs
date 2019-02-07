@@ -82,11 +82,6 @@ pub use self::index::Index;
 
 use self::ser::Serializer;
 
-// Rather than having a specialized 'nil' atom, we save space by letting `None`
-// here indicates 'nil'
-type SexpPtr = Box<Sexp>;
-type ConsCell = Option<SexpPtr>;
-
 /// Represents any valid S-expression value.
 ///
 /// See the `sexpr::sexp` module documentation for usage examples.
@@ -129,7 +124,7 @@ pub enum Sexp {
 
     /// Represents a S-expression boolean.
     ///
-    /// ```rust,ignore
+    /// ```
     /// # use sexpr::sexp;
     /// #
     /// # fn main() {
@@ -138,23 +133,30 @@ pub enum Sexp {
     /// ```
     Boolean(bool),
 
-    /// Represents a S-expression cons-pair.
+    /// Represents a S-expression improper list.
     ///
-    /// ```rust,ignore
+    /// An improper list is a list where the last cons cell's `cdr` is not the empty
+    /// list (i.e., not nil). Pairs (cons cells) are represented as improper lists that
+    /// have a single element in their `Vec` component.
+    ///
+    /// Note that circular lists, which are also considered improper lists, are not
+    /// representable by the `Sexp` type.
+    ///
+    /// ```
     /// # use sexpr::sexp;
     /// #
     /// # fn main() {
     /// let v = sexp!((a . 1));
     /// # }
     /// ```
-    Pair(ConsCell, ConsCell),
+    ImproperList(Vec<Sexp>, Box<Sexp>),
 
     /// Represents a S-expression list.
     ///
     /// This enum type is 'multi-function' at this point, possibly representing either
     /// a list of items or an associative list.
     ///
-    /// ```rust,ignore
+    /// ```
     /// # use sexpr::sexp;
     /// #
     /// # fn main() {
@@ -178,10 +180,20 @@ impl Sexp {
     /// # }
     /// ```
     pub fn new_entry<A: Into<Atom>, I: Into<Sexp>>(key: A, value: I) -> Sexp {
-        Sexp::Pair(
-            Some(Box::new(Sexp::Atom(key.into()))),
-            Some(Box::new(value.into())),
-        )
+        Sexp::ImproperList(vec![Sexp::Atom(key.into())], Box::new(value.into()))
+    }
+
+    pub fn new_improper_list<I, T, R>(elements: I, rest: R) -> Sexp
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<Sexp>,
+        R: Into<Sexp>,
+    {
+        Sexp::ImproperList(elements.into_iter().map(|elt| elt.into()).collect(), Box::new(rest.into()))
+    }
+
+    pub fn new_symbol(name: impl Into<String>) -> Sexp {
+        Sexp::Atom(Atom::Symbol(name.into()))
     }
 
     pub fn new_keyword(name: impl Into<String>) -> Sexp {

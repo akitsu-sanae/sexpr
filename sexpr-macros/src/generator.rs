@@ -10,10 +10,11 @@ impl ToTokens for Ast {
         let expanded = match self {
             Boolean(value) => quote! { ::sexpr::Sexp::from(#value) },
             Int(value) => quote! { ::sexpr::Sexp::from(#value) },
+            Symbol(name) => quote! { ::sexpr::Sexp::new_symbol(#name) },
             Keyword(name) => quote! { ::sexpr::Sexp::new_keyword(#name) },
             String(s) => quote! { ::sexpr::Sexp::from(#s) },
             List(elements) => quote! { ::sexpr::Sexp::List(vec![#(#elements),*]) },
-            ImproperList(elements, rest) => quote! { ::sexpr::Sexp::ImproperList(vec![#(#elements),*], #rest) },
+            ImproperList(elements, rest) => quote! { ::sexpr::Sexp::ImproperList(vec![#(#elements),*], Box::new(#rest)) },
         };
         tokens.extend(expanded);
     }

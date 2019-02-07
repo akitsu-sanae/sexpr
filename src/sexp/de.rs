@@ -178,7 +178,6 @@ impl<'de> serde::Deserializer<'de> for Sexp {
             Sexp::Boolean(v) => visitor.visit_bool(v),
             Sexp::Number(n) => n.deserialize_any(visitor),
             Sexp::Atom(a) => visitor.visit_string(a.as_string()),
-            Sexp::Pair(_, _) => unimplemented!(),
             Sexp::List(v) => {
                 let len = v.len();
                 let mut deserializer = SeqDeserializer::new(v);
@@ -193,6 +192,7 @@ impl<'de> serde::Deserializer<'de> for Sexp {
                     ))
                 }
             }
+            Sexp::ImproperList(_, _) => unimplemented!(),
         }
     }
 
@@ -316,7 +316,6 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
             Sexp::Boolean(v) => visitor.visit_bool(v),
             Sexp::Number(ref n) => n.deserialize_any(visitor),
             Sexp::Atom(ref a) => visitor.visit_borrowed_str(a.as_str()),
-            Sexp::Pair(_, _) => unimplemented!(),
             Sexp::List(ref v) => {
                 let len = v.len();
                 let mut deserializer = SeqRefDeserializer::new(v);
@@ -331,6 +330,7 @@ impl<'de> serde::Deserializer<'de> for &'de Sexp {
                     ))
                 }
             }
+            Sexp::ImproperList(_, _) => unimplemented!(),
         }
     }
 

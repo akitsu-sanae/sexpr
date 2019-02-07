@@ -1,6 +1,6 @@
 use crate::ast::Ast;
 
-use proc_macro2::{TokenStream, TokenTree, Delimiter};
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
 
 #[derive(Debug)]
 struct Parser {
@@ -24,7 +24,7 @@ impl Parser {
 
     fn next_token(&mut self) -> Option<&TokenTree> {
         if self.index == self.tokens.len() {
-            return None
+            return None;
         }
         let token = &self.tokens[self.index];
         self.index += 1;
@@ -49,12 +49,10 @@ impl Parser {
 
     fn parse(&mut self) -> Result<Ast, ParseError> {
         match self.token()? {
-            TokenTree::Punct(punct) => {
-                match punct.as_char() {
-                    '#' => self.parse_octothorpe(),
-                    c => Err(ParseError::UnexpectedChar(c)),
-                }
-            }
+            TokenTree::Punct(punct) => match punct.as_char() {
+                '#' => self.parse_octothorpe(),
+                c => Err(ParseError::UnexpectedChar(c)),
+            },
             TokenTree::Literal(literal) => {
                 let s = literal.to_string();
                 let b: &[u8] = s.as_ref();
@@ -64,13 +62,11 @@ impl Parser {
                     c => Err(ParseError::UnexpectedChar(c as char)),
                 }
             }
-            TokenTree::Group(group) => {
-                match group.delimiter() {
-                    Delimiter::Parenthesis => Self::parse_list(group.stream()),
-                    delim => Err(ParseError::UnexpectedDelimiter(delim)),
-                }
-            }
-            t => Err(ParseError::UnexpectedToken(t.clone())),
+            TokenTree::Ident(ident) => Ok(Ast::Symbol(ident.to_string())),
+            TokenTree::Group(group) => match group.delimiter() {
+                Delimiter::Parenthesis => Self::parse_list(group.stream()),
+                delim => Err(ParseError::UnexpectedDelimiter(delim)),
+            },
         }
     }
 
@@ -87,29 +83,27 @@ impl Parser {
                         }
                         parser.eat_token();
                         tail = Some(parser.parse()?);
-                        continue
+                        continue;
                     }
                 }
                 elements.push(parser.parse()?);
             } else {
-                break
+                break;
             }
         }
         match tail {
             Some(rest) => Ok(Ast::ImproperList(elements, Box::new(rest))),
-            None => Ok(Ast::List(elements))
+            None => Ok(Ast::List(elements)),
         }
     }
 
     fn parse_octothorpe(&mut self) -> Result<Ast, ParseError> {
         let token = self.token()?;
         match token {
-            TokenTree::Punct(punct) => {
-                match punct.as_char() {
-                    ':' => Ok(Ast::Keyword(self.parse_ident()?)),
-                    c => Err(ParseError::UnexpectedChar(c)),
-                }
-            }
+            TokenTree::Punct(punct) => match punct.as_char() {
+                ':' => Ok(Ast::Keyword(self.parse_ident()?)),
+                c => Err(ParseError::UnexpectedChar(c)),
+            },
             TokenTree::Ident(ident) => {
                 let name = ident.to_string();
                 match name.as_str() {
@@ -122,7 +116,7 @@ impl Parser {
         }
     }
 
-    fn parse_ident(&mut self)  -> Result<String, ParseError> {
+    fn parse_ident(&mut self) -> Result<String, ParseError> {
         match self.token()? {
             TokenTree::Ident(ident) => Ok(ident.to_string()),
             t => Err(ParseError::UnexpectedToken(t.clone())),

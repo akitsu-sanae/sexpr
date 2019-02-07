@@ -1,4 +1,5 @@
 use sexpr::{sexp, Sexp};
+use std::iter::FromIterator;
 
 #[test]
 fn test_boolean() {
@@ -18,10 +19,27 @@ fn test_string() {
 
 #[test]
 fn test_pair() {
-    assert_eq!(sexp!(("hello" . "world")), Sexp::new_entry("hello", "world"));
+    assert_eq!(
+        sexp!(("hello" . "world")),
+        Sexp::new_entry("hello", "world")
+    );
 }
 
 #[test]
 fn test_list() {
-    assert_eq!(sexp!((1 2 "three")), Sexp::from(&[Sexp::from(1), Sexp::from(2), Sexp::from("three")]));
+    assert_eq!(
+        sexp!((1 2 "three")),
+        Sexp::from_iter(vec![Sexp::from(1), Sexp::from(2), Sexp::from("three")])
+    );
+}
+
+#[test]
+fn test_improper_list() {
+    assert_eq!(
+        sexp!((1 2 "hello" . "world")),
+        Sexp::new_improper_list(
+            vec![Sexp::from(1), Sexp::from(2), Sexp::from("hello")],
+            Sexp::from("world")
+        )
+    );
 }

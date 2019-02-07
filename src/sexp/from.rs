@@ -186,9 +186,9 @@ impl<'a, T: Clone + Into<Sexp>> From<&'a [T]> for Sexp {
 
 impl<T: Clone + Into<Sexp>, U: Clone + Into<Sexp>> From<&(T, U)> for Sexp {
     fn from(pair: &(T, U)) -> Self {
-        Sexp::Pair(
-            Some(Box::new(pair.0.clone().into())),
-            Some(Box::new(pair.1.clone().into())),
+        Sexp::ImproperList(
+            vec![pair.0.clone().into()],
+            Box::new(pair.1.clone().into()),
         )
     }
 }
