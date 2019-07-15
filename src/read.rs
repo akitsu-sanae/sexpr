@@ -575,13 +575,13 @@ fn parse_escape<'de, R: Read<'de>>(read: &mut R, scratch: &mut Vec<u8>) -> Resul
         b't' => scratch.push(b'\t'),
         b'u' => {
             let c = match decode_hex_escape(read)? {
-                0xDC00...0xDFFF => {
+                0xDC00..=0xDFFF => {
                     return error(read, ErrorCode::LoneLeadingSurrogateInHexEscape);
                 }
 
                 // Non-BMP characters are encoded as a sequence of
                 // two hex escapes, representing UTF-16 surrogates.
-                n1 @ 0xD800...0xDBFF => {
+                n1 @ 0xD800..=0xDBFF => {
                     if next_or_eof(read)? != b'\\' {
                         return error(read, ErrorCode::UnexpectedEndOfHexEscape);
                     }
@@ -631,7 +631,7 @@ fn decode_hex_escape<'de, R: Read<'de>>(read: &mut R) -> Result<u16> {
     let mut n = 0;
     for _ in 0..4 {
         n = match next_or_eof(read)? {
-            c @ b'0'...b'9' => n * 16_u16 + (u16::from(c) - u16::from(b'0')),
+            c @ b'0'..=b'9' => n * 16_u16 + (u16::from(c) - u16::from(b'0')),
             b'a' | b'A' => n * 16_u16 + 10_u16,
             b'b' | b'B' => n * 16_u16 + 11_u16,
             b'c' | b'C' => n * 16_u16 + 12_u16,

@@ -207,7 +207,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                 self.eat_char();
                 self.parse_integer(false)?.visit(visitor)
             }
-            b'0'...b'9' => self.parse_integer(true)?.visit(visitor),
+            b'0'..=b'9' => self.parse_integer(true)?.visit(visitor),
             b'"' => {
                 self.eat_char();
                 self.str_buf.clear();
@@ -234,7 +234,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
                     (Err(err), _) | (_, Err(err)) => Err(err),
                 }
             }
-            b'a'...b'z' | b'A'...b'Z' => {
+            b'a'..=b'z' | b'A'..=b'Z' => {
                 self.str_buf.clear();
                 match self.read.parse_symbol(&mut self.str_buf)? {
                     Reference::Borrowed(s) => visitor.visit_newtype_struct(Atom::from_str(s)),
@@ -271,16 +271,16 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             b'0' => {
                 // There can be only one leading '0'.
                 match self.peek_or_null()? {
-                    b'0'...b'9' => Err(self.peek_error(ErrorCode::InvalidNumber)),
+                    b'0'..=b'9' => Err(self.peek_error(ErrorCode::InvalidNumber)),
                     _ => self.parse_number(pos, 0),
                 }
             }
-            c @ b'1'...b'9' => {
+            c @ b'1'..=b'9' => {
                 let mut res = u64::from(c - b'0');
 
                 loop {
                     match self.peek_or_null()? {
-                        c @ b'0'...b'9' => {
+                        c @ b'0'..=b'9' => {
                             self.eat_char();
                             let digit = u64::from(c - b'0');
 
@@ -313,7 +313,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
     ) -> Result<f64> {
         loop {
             match self.peek_or_null()? {
-                b'0'...b'9' => {
+                b'0'..=b'9' => {
                     self.eat_char();
                     // This could overflow... if your integer is gigabytes long.
                     // Ignore that possibility.
@@ -357,7 +357,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         self.eat_char();
 
         let mut at_least_one_digit = false;
-        while let c @ b'0'...b'9' = self.peek_or_null()? {
+        while let c @ b'0'..=b'9' = self.peek_or_null()? {
             self.eat_char();
             let digit = u64::from(c - b'0');
             at_least_one_digit = true;
@@ -365,7 +365,7 @@ impl<'de, R: Read<'de>> Deserializer<R> {
             if overflow!(significand * 10 + digit, u64::MAX) {
                 // The next multiply/add would overflow, so just ignore all
                 // further digits.
-                while let b'0'...b'9' = self.peek_or_null()? {
+                while let b'0'..=b'9' = self.peek_or_null()? {
                     self.eat_char();
                 }
                 break;
@@ -745,7 +745,7 @@ where
                         Reference::Copied(s) => visitor.visit_str(s),
                     }
                 }
-                b'a'...b'z' | b'A'...b'Z' => {
+                b'a'..=b'z' | b'A'..=b'Z' => {
                     self.de.str_buf.clear();
                     match self.de.read.parse_symbol(&mut self.de.str_buf)? {
                         Reference::Borrowed(s) => visitor.visit_borrowed_str(s),
